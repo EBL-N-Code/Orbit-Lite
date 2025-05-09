@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "org.skyblockagent.mixins",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "client": [
+    "ClientPlayNetworkHandlerMixin",
+    "FishingBobberEntityMixin",
+    "PlayerSkinProviderMixin",
+    "ScoreboardMixin",
+    "YggdrasilServicesKeyInfoMixin",
+    "accessors.DrawContextAccessor",
+    "MinecraftClientMixin",
+    "RenderLayerMixin"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "skyblockagent",
+  "version": "${version}",
+  "name": "SkyBlockAgent",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "org.skyblockagent.Skyblockagent"
+    ]
+  },
+  "mixins": [
+    "skyblockagent.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
