@@ -9,6 +9,7 @@ import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Style;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
+import org.skyblockagent.managers.InputState;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -20,13 +21,10 @@ public class TextEditor {
     private static final long SNAPSHOT_INTERVAL_MS = 500;
     private final TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
     private final InputBar inputBar;
+    private final InputState inputState;
     private final int maxLineWidth;
-    private final List<String> lines = new ArrayList<>(List.of(""));
     private final Deque<EditorState> undoStack = new ArrayDeque<>();
     private final Deque<EditorState> redoStack = new ArrayDeque<>();
-    private CursorPosition cursorPosition = new CursorPosition(0, 0);
-    private CursorPosition selectionStart = new CursorPosition(0, 0);
-    private CursorPosition selectionEnd = new CursorPosition(0, 0);
     private long lastSnapshotTime = 0;
     private boolean focused = true;
     private int x, y;
@@ -34,6 +32,7 @@ public class TextEditor {
 
     protected TextEditor(InputBar inputBar, int maxLineWidth) {
         this.inputBar = inputBar;
+        this.inputState = inputBar.inputState;
         this.maxLineWidth = maxLineWidth;
     }
 
@@ -42,6 +41,12 @@ public class TextEditor {
         this.y = y;
         this.width = width;
         this.height = height;
+    }
+
+    protected void reset() {
+        undoStack.clear();
+        redoStack.clear();
+        lastSnapshotTime = 0;
     }
 
     /**
@@ -56,6 +61,8 @@ public class TextEditor {
         if (hasSelection()) deleteSelection();
 
         List<String> pasteLines = text.lines().toList();
+        List<String> lines = getLines();
+        CursorPosition cursorPosition = getCursorPosition();
         String currentLine = lines.get(cursorPosition.line);
         int col = Math.min(cursorPosition.column, currentLine.length());
         String before = currentLine.substring(0, col);
@@ -107,20 +114,25 @@ public class TextEditor {
     }
 
     private void backspace() {
+        CursorPosition cursorPosition = getCursorPosition();
         if (cursorPosition.line == 0 && cursorPosition.column == 0) return; // Nothing to delete
+        List<String> lines = getLines();
 
         if (cursorPosition.column > 0) {
             String line = lines.get(cursorPosition.line);
             lines.set(cursorPosition.line, line.substring(0, cursorPosition.column - 1) + line.substring(cursorPosition.column));
-            cursorPosition = new CursorPosition(cursorPosition.line, cursorPosition.column - 1);
+            setCursorPosition(new CursorPosition(cursorPosition.line, cursorPosition.column - 1));
         } else { // Merge with previous line
             String removedLine = lines.remove(cursorPosition.line);
             cursorPosition = new CursorPosition(cursorPosition.line - 1, lines.get(cursorPosition.line - 1).length());
             lines.set(cursorPosition.line, lines.get(cursorPosition.line) + removedLine);
+            setCursorPosition(cursorPosition);
         }
     }
 
     private void delete() {
+        List<String> lines = getLines();
+        CursorPosition cursorPosition = getCursorPosition();
         String line = lines.get(cursorPosition.line);
         if (cursorPosition.column < line.length()) {
             lines.set(cursorPosition.line, line.substring(0, cursorPosition.column) + line.substring(cursorPosition.column + 1));
@@ -130,6 +142,9 @@ public class TextEditor {
     }
 
     private void deleteSelection() {
+        List<String> lines = getLines();
+        CursorPosition selectionStart = getSelectionStart();
+        CursorPosition selectionEnd = getSelectionEnd();
         CursorPosition start = CursorPosition.min(selectionStart, selectionEnd);
         CursorPosition end = CursorPosition.max(selectionStart, selectionEnd);
 
@@ -145,21 +160,23 @@ public class TextEditor {
             lines.add(start.line, mergedLine);
         }
 
-        cursorPosition = start;
-        selectionStart = start;
-        selectionEnd = start;
+        setCursorPosition(start);
+        setSelectionStart(start);
+        setSelectionEnd(start);
     }
 
     private void deleteWord(int direction) {
-        CursorPosition start = cursorPosition;
+        CursorPosition start = getCursorPosition();
         CursorPosition end = getWordSkipPosition(direction);
 
-        selectionStart = (direction < 0) ? end : start;
-        selectionEnd = (direction < 0) ? start : end;
+        setSelectionStart((direction < 0) ? end : start);
+        setSelectionEnd((direction < 0) ? start : end);
         deleteSelection();
     }
 
     protected CursorPosition getWordSkipPosition(int direction) {
+        List<String> lines = getLines();
+        CursorPosition cursorPosition = getCursorPosition();
         if (lines.isEmpty()) return cursorPosition;
 
         int line = cursorPosition.line;
@@ -199,12 +216,15 @@ public class TextEditor {
 
     protected void insertNewLine() {
         snapshot();
+        List<String> lines = getLines();
+        CursorPosition cursorPosition = getCursorPosition();
 
         String currentLine = lines.get(cursorPosition.line);
         lines.set(cursorPosition.line, currentLine.substring(0, cursorPosition.column));
-        lines.add(cursorPosition.line + 1, currentLine.substring(cursorPosition.column));
+        int newLineIndex = cursorPosition.line + 1;
+        lines.add(newLineIndex, currentLine.substring(cursorPosition.column));
 
-        setCursor(new CursorPosition(cursorPosition.line + 1, 0), false);
+        setCursor(new CursorPosition(newLineIndex, 0), false);
     }
 
     protected void render(DrawContext context, float scrollOffset) {
@@ -224,8 +244,11 @@ public class TextEditor {
         if (isEmpty()) {
             context.drawText(textRenderer, "Ask anything", x, y, 0xA0A0A0, true);
         } else {
+            CursorPosition selectionStart = getSelectionStart();
+            CursorPosition selectionEnd = getSelectionEnd();
             CursorPosition selStart = CursorPosition.min(selectionStart, selectionEnd);
             CursorPosition selEnd = CursorPosition.max(selectionStart, selectionEnd);
+            List<String> lines = getLines();
 
             for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
                 String line = lines.get(lineIndex);
@@ -251,6 +274,8 @@ public class TextEditor {
         if (focused && !hasSelection()) {
             boolean blink = (Util.getMeasuringTimeMs() - inputBar.lastSwitchFocusTime) / 500L % 2L == 0L;
             if (blink) {
+                List<String> lines = getLines();
+                CursorPosition cursorPosition = getCursorPosition();
                 String line = lines.get(cursorPosition.line);
                 int cursorX = x + textRenderer.getWidth(line.substring(0, Math.min(line.length(), cursorPosition.column)));
                 int cursorY = y + cursorPosition.line * InputBar.LINE_HEIGHT;
@@ -264,9 +289,10 @@ public class TextEditor {
         if (clickCount == 2) {
             selectWordAt(clickedPosition);
         } else if (clickCount >= 3) {
-            String lineText = lines.get(clickedPosition.line);
+            String lineText = getLines().get(clickedPosition.line);
             setSelectionStart(new CursorPosition(clickedPosition.line, 0));
-            setSelectionEnd(new CursorPosition(clickedPosition.line, lineText.length()));
+            CursorPosition selectionEnd = new CursorPosition(clickedPosition.line,lineText.length());
+            setSelectionEnd(selectionEnd);
             setCursorPosition(selectionEnd); // Move cursor to end after triple click
         } else {
             setCursor(clickedPosition, Screen.hasShiftDown());
@@ -274,12 +300,13 @@ public class TextEditor {
     }
 
     protected String getSelection() {
-        if (!hasSelection()) {
-            return "";
-        }
+        if (!hasSelection()) return "";
 
+        CursorPosition selectionStart = getSelectionStart();
+        CursorPosition selectionEnd = getSelectionEnd();
         CursorPosition start = CursorPosition.min(selectionStart, selectionEnd);
         CursorPosition end = CursorPosition.max(selectionStart, selectionEnd);
+        List<String> lines = getLines();
 
         if (start.line == end.line) {
             return lines.get(start.line).substring(start.column, end.column);
@@ -303,11 +330,13 @@ public class TextEditor {
      * @param shiftDown True if the shift key is pressed, extending the selection.
      */
     protected void moveCursor(int direction, boolean shiftDown) {
-        CursorPosition newPos = cursorPosition.offset(lines, direction);
+        CursorPosition newPos = getCursorPosition().offset(getLines(), direction);
         setCursor(newPos, shiftDown);
     }
 
     protected void moveCursorVertical(int direction, boolean shiftDown) {
+        CursorPosition cursorPosition = getCursorPosition();
+        List<String> lines = getLines();
         int newLine = MathHelper.clamp(cursorPosition.line + direction, 0, lines.size() - 1);
         if (newLine == cursorPosition.line) return;
 
@@ -317,6 +346,7 @@ public class TextEditor {
     }
 
     private int getCursorPixelX(int line, int column) {
+        List<String> lines = getLines();
         if (line < 0 || line >= lines.size()) return 0;
 
         String text = lines.get(line);
@@ -345,17 +375,19 @@ public class TextEditor {
      * @param shiftKeyPressed True if the shift key is pressed, extending the selection.
      */
     protected void setCursor(CursorPosition pos, boolean shiftKeyPressed) {
-        pos = pos.clamp(lines);
-        cursorPosition = pos;
-        selectionEnd = pos;
+        pos = pos.clamp(getLines());
+        setCursorPosition(pos);
+        setCursorPosition(pos);
+        setSelectionEnd(pos);
 
-        if (!shiftKeyPressed) selectionStart = pos;
+        if (!shiftKeyPressed) setSelectionStart(pos);
 
         inputBar.refreshLayout(true);
         inputBar.lastSwitchFocusTime = Util.getMeasuringTimeMs();
     }
 
     private void selectWordAt(CursorPosition pos) {
+        List<String> lines = getLines();
         if (lines.isEmpty()) return;
         pos = pos.clamp(lines);
 
@@ -372,10 +404,10 @@ public class TextEditor {
             end++;
         }
 
-        selectionStart = new CursorPosition(pos.line, start);
-        selectionEnd = new CursorPosition(pos.line, end);
-
-        cursorPosition = selectionEnd; // cursor at the end of selection
+        setSelectionStart(new CursorPosition(pos.line, start));
+        CursorPosition selectionEnd = new CursorPosition(pos.line, end);
+        setSelectionEnd(selectionEnd);
+        setCursorPosition(selectionEnd); // cursor at the end of selection
     }
 
     /**
@@ -383,13 +415,16 @@ public class TextEditor {
      */
     protected void wrapLines() {
         List<String> wrappedLines = new ArrayList<>();
+        List<String> lines = getLines();
+        CursorPosition cursorPosition = getCursorPosition();
 
         int i = 0;
         for (String line : lines) {
             List<StringVisitable> list = textRenderer.getTextHandler().wrapLines(line, maxLineWidth, Style.EMPTY);
             if (list.isEmpty()) list.add(StringVisitable.plain(""));
+            boolean wrapped = list.size() > 1;
 
-            if (list.size() > 1 && i == cursorPosition.line) {
+            if (wrapped && i == cursorPosition.line) {
                 String currentLine = lines.get(cursorPosition.line);
                 String after = currentLine.substring(Math.min(cursorPosition.column, currentLine.length()));
                 cursorPosition.line += list.size() - 1;
@@ -450,57 +485,40 @@ public class TextEditor {
     }
 
     private EditorState captureCurrentState() {
-        List<String> linesCopy = new ArrayList<>(lines);
-        return new EditorState(linesCopy, cursorPosition.copy(), selectionStart.copy(), selectionEnd.copy());
+        List<String> linesCopy = new ArrayList<>(getLines());
+        return new EditorState(linesCopy, getCursorPosition().copy(), getSelectionStart().copy(), getSelectionEnd().copy());
     }
 
     private void applyState(EditorState state) {
+        List<String> lines = getLines();
         lines.clear();
         lines.addAll(state.lines());
-        cursorPosition = state.cursor();
-        selectionStart = state.selectionStart();
-        selectionEnd = state.selectionEnd();
+        setCursorPosition(state.cursor());
+        setSelectionStart(state.selectionStart());
+        setSelectionEnd(state.selectionEnd());
         inputBar.refreshLayout(true);
     }
 
     protected boolean isEmpty() {
+        List<String> lines = getLines();
         return lines.size() == 1 && lines.getFirst().isEmpty();
     }
 
     protected boolean hasSelection() {
-        return !selectionStart.equals(selectionEnd);
+        return !getSelectionStart().equals(getSelectionEnd());
     }
 
     protected void setCursorToLineStart(boolean shiftDown) {
-        setCursor(new CursorPosition(cursorPosition.line, 0), shiftDown);
+        setCursor(new CursorPosition(getCursorPosition().line, 0), shiftDown);
     }
 
     protected void setCursorToLineEnd(boolean shiftDown) {
-        setCursor(new CursorPosition(cursorPosition.line, lines.get(cursorPosition.line).length()), shiftDown);
-    }
-
-    protected void setSelectionEnd(CursorPosition selectionEnd) {
-        this.selectionEnd = selectionEnd;
+        CursorPosition cursorPosition = getCursorPosition();
+        setCursor(new CursorPosition(cursorPosition.line, getLines().get(cursorPosition.line).length()), shiftDown);
     }
 
     protected boolean isHovered(double mouseX, double mouseY) {
-        return mouseX >= x - 4 && mouseX <= x + width + 4 && mouseY >= y - 2 && mouseY <= y + height + 2;
-    }
-
-    protected void setSelectionStart(CursorPosition selectionStart) {
-        this.selectionStart = selectionStart;
-    }
-
-    protected List<String> getLines() {
-        return lines;
-    }
-
-    protected CursorPosition getCursorPosition() {
-        return cursorPosition;
-    }
-
-    protected void setCursorPosition(CursorPosition cursorPosition) {
-        this.cursorPosition = cursorPosition;
+        return mouseX >= x - 10 && mouseX <= x + width + 10 && mouseY >= y - 8 && mouseY <= y + height + 4;
     }
 
     protected int getY() {
@@ -517,5 +535,33 @@ public class TextEditor {
 
     protected int getHeight() {
         return height;
+    }
+
+    private List<String> getLines() {
+        return inputState.getLines();
+    }
+
+    private CursorPosition getSelectionStart() {
+        return inputState.getSelectionStart();
+    }
+
+    private CursorPosition getSelectionEnd() {
+        return inputState.getSelectionEnd();
+    }
+
+    private CursorPosition getCursorPosition() {
+        return inputState.getCursorPosition();
+    }
+
+    private void setSelectionStart(CursorPosition cursorPosition) {
+        inputState.setSelectionStart(cursorPosition);
+    }
+
+    private void setSelectionEnd(CursorPosition cursorPosition) {
+        inputState.setSelectionEnd(cursorPosition);
+    }
+
+    private void setCursorPosition(CursorPosition cursorPosition) {
+        inputState.setCursorPosition(cursorPosition);
     }
 }

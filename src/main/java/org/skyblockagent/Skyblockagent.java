@@ -6,6 +6,8 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.minecraft.client.gui.screen.Screen;
 import org.jetbrains.annotations.Nullable;
 import org.skyblockagent.gui.ChatScreen;
+import org.skyblockagent.managers.ChatManager;
+import org.skyblockagent.managers.Session;
 import org.skyblockagent.utils.scheduler.Scheduler;
 
 public class Skyblockagent implements ClientModInitializer {
@@ -20,6 +22,12 @@ public class Skyblockagent implements ClientModInitializer {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
                 dispatcher.register(ClientCommandManager.literal("chat")
                         .executes(Scheduler.openScreen(() -> createGUI(null)))));
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
+                dispatcher.register(ClientCommandManager.literal("reset")
+                        .executes((_) -> {
+                            ChatManager.INSTANCE.session = new Session();
+                            return 1;
+                        })));
     }
 
     public static Screen createGUI(@Nullable Screen parent) {

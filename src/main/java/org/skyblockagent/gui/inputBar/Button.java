@@ -3,6 +3,8 @@ package org.skyblockagent.gui.inputBar;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import org.skyblockagent.managers.ChatManager;
+import org.skyblockagent.managers.Session;
 import org.skyblockagent.utils.render.RenderUtils;
 
 import java.util.function.Consumer;
@@ -11,7 +13,7 @@ public class Button {
     private static final int FILL_COLOR = 0xFF1B1C1D;
     private static final int OUTLINE_COLOR = 0xFF424447;
     private static final float OUTLINE_THICKNESS = 0.5f;
-    protected static final int BUTTON_HEIGHT = 16;
+    public static final int BUTTON_HEIGHT = 16;
     private static final int CORNER_RADIUS = 8;
     private final TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
     private final int width, height;

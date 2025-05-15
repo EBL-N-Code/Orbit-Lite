@@ -7,13 +7,18 @@ public class Scrollbar {
     private static final int CORNER_RADIUS = 2;
     private static final int TEXTURE_WIDTH = 3;
     private static final int MIN_HEIGHT = 8;
-    private final int x, startY;
+    private int x, startY;
     private int y, height;
     private boolean isVisible = false;
     private boolean isDragging = false;
+    private final InputBar inputBar;
 
-    public Scrollbar(InputBar inputBar, int y) {
-        this.startY = y;
+    public Scrollbar(InputBar inputBar) {
+        this.inputBar = inputBar;
+    }
+
+    public void init(int cornerRadius) {
+        this.startY = inputBar.getY() + cornerRadius;
         this.x = inputBar.getX() + inputBar.getWidth() - TEXTURE_WIDTH - 4;
     }
 

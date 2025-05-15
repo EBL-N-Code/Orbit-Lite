@@ -6,6 +6,10 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.skyblockagent.Skyblockagent;
+import org.skyblockagent.gui.ChatScreen;
+import org.skyblockagent.managers.ChatManager;
+import org.skyblockagent.managers.message.ChatMessage;
+import org.skyblockagent.managers.message.UserMessage;
 import org.skyblockagent.utils.render.RenderUtils;
 
 public class SendButton {
@@ -24,9 +28,8 @@ public class SendButton {
     }
 
     protected void onClick() {
-        if (!inputBar.textEditor.isEmpty()) {
-            MinecraftClient.getInstance().player.sendMessage(Text.of("CLICKED"), false);
-        }
+        if (inputBar.textEditor.isEmpty()) return;
+        ChatManager.INSTANCE.session.addMessage();
     }
 
     protected void render(DrawContext context, double mouseX, double mouseY) {
@@ -35,7 +38,7 @@ public class SendButton {
         context.drawTexture(RenderLayer::getGuiTextured, ARROW_TEXTURE, x + 4, y + 4, 0, 0, 8, 8, 8, 8);
 
         if (isHovered(mouseX, mouseY) || inputBar.textEditor.isEmpty()) {
-            RenderUtils.drawEllipse(context, x, y, SIZE, SIZE, 0x20000000);
+            RenderUtils.drawEllipse(context, x, y, SIZE, SIZE, 0x60000000);
         }
     }
 
