@@ -115,14 +115,16 @@ public class ChatScreen extends SafeScreen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (!inputBar.isHovered(mouseX, mouseY)) {
-            inputBar.setFocused(false);
-        } else {
-            inputBar.mouseClicked(mouseX, mouseY, button);
+        if (inputBar.mouseClicked(mouseX, mouseY, button)) {
+            inputBar.playDownSound(MinecraftClient.getInstance().getSoundManager());
             if (button == 0) this.setDragging(true);
+            if (getFocused() == inputBar) return true;
+            setFocused(inputBar);
             return true;
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+
+        setFocused(null);
+        return false;
     }
 
     @Override
@@ -141,10 +143,6 @@ public class ChatScreen extends SafeScreen {
 
     public int getY() {
         return y;
-    }
-
-    public int getWidth() {
-        return menuWidth;
     }
 
     public int getHeight() {

@@ -59,7 +59,7 @@ public class InputBar extends ClickableWidget {
         this.inputState = ChatManager.INSTANCE.session.getInputState();
         this.textEditor = new TextEditor(this, this.width - cornerRadius * 2);
         this.sendButton = new SendButton(this);
-        this.scrollbar = new Scrollbar(this);
+        this.scrollbar = new Scrollbar();
 
         //preview or no maybe
         if (ChatManager.INSTANCE.session.getInputState().getLines().isEmpty()) {
@@ -99,7 +99,7 @@ public class InputBar extends ClickableWidget {
         sendButton.init(x + width - (cornerRadius / 2) - SendButton.SIZE, y + height - cornerRadius - SendButton.SIZE + 6);
 
         // Scrollbar
-        scrollbar.init(cornerRadius);
+        scrollbar.init(x, y, width, cornerRadius);
     }
 
     /**
@@ -197,9 +197,13 @@ public class InputBar extends ClickableWidget {
     }
 
     @Override
-    public void onClick(double mouseX, double mouseY) {
-        super.setFocused(true);
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
         this.lastSwitchFocusTime = Util.getMeasuringTimeMs();
+
+        if (scrollbar.isVisible() && scrollbar.isHovered(mouseX, mouseY)) {
+            scrollbar.setDragging(true);
+            return true;
+        }
 
         if (textEditor.isHovered(mouseX, mouseY)) {
             long currentTime = System.currentTimeMillis();
@@ -208,27 +212,24 @@ public class InputBar extends ClickableWidget {
             textEditor.setFocused(true);
             textEditor.onClick(mapMouseToCursor(mouseX, mouseY), clickCount);
             selectingText = true;
-            return;
-        }
-
-        if (scrollbar.isVisible() && scrollbar.isHovered(mouseX, mouseY)) {
-            scrollbar.setDragging(true);
-            return;
+            return true;
         }
 
         textEditor.setFocused(false);
 
         if (sendButton.isHovered(mouseX, mouseY)) {
             sendButton.onClick();
-            return;
+            return true;
         }
 
-        for (Button button : controlButtons) {
-            if (button.isHovered(mouseX, mouseY)) {
-                button.onClick();
-                return;
+        for (Button controlButton : controlButtons) {
+            if (controlButton.isHovered(mouseX, mouseY)) {
+                controlButton.onClick();
+                return true;
             }
         }
+
+        return false;
     }
 
     @Override
@@ -414,12 +415,6 @@ public class InputBar extends ClickableWidget {
         return false;
     }
 
-    @Override
-    public void setFocused(boolean focused) {
-        super.setFocused(focused);
-        textEditor.setFocused(focused);
-    }
-
     /**
      * Calculates the total height of the text editor's lines based on the line count and line height.
      *
@@ -436,10 +431,6 @@ public class InputBar extends ClickableWidget {
      */
     private int getMaxScroll() {
         return (inputState.getLines().size() - maxVisibleLines) * LINE_HEIGHT;
-    }
-
-    public boolean isHovered(double mouseX, double mouseY) {
-        return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
     }
 
     @Override

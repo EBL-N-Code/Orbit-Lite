@@ -32,6 +32,7 @@ public class Session {
 
         ChatMessage chatMessage = new UserMessage(new ArrayList<>(inputState.getLines()));
         chatScreen.getChatDisplay().initMessage(chatMessage);
+        chatScreen.getChatDisplay().init();
         chatMessages.add(chatMessage);
 
         inputState.reset();

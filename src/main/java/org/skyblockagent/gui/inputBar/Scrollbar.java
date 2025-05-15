@@ -11,15 +11,10 @@ public class Scrollbar {
     private int y, height;
     private boolean isVisible = false;
     private boolean isDragging = false;
-    private final InputBar inputBar;
 
-    public Scrollbar(InputBar inputBar) {
-        this.inputBar = inputBar;
-    }
-
-    public void init(int cornerRadius) {
-        this.startY = inputBar.getY() + cornerRadius;
-        this.x = inputBar.getX() + inputBar.getWidth() - TEXTURE_WIDTH - 4;
+    public void init(int x, int y, int width, int cornerRadius) {
+        this.startY = y + cornerRadius;
+        this.x = x + width - TEXTURE_WIDTH - 4;
     }
 
     public void update(int height, int maxScrollHeight, double scrollPercentage) {
