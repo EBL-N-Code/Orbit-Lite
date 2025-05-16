@@ -81,12 +81,19 @@ public class ChatScreen extends SafeScreen {
     }
 
     public void initDisplay() {
-        chatDisplay = new ChatDisplay(inputBar.getX(), y, inputBar.getWidth(), inputBar.getY() - y + inputBar.getCornerRadius());
+        chatDisplay = new ChatDisplay(inputBar.getX(), y, inputBar.getWidth(), inputBar.getY() - y);
         addDrawableChild(chatDisplay);
     }
 
-    public void onMessage(boolean firstMessage) {
-        inputBar.reset(firstMessage);
+    //Should be called on every widget change
+    public void update() {
+        if (chatDisplay != null) {
+            chatDisplay.updateHeight(inputBar.getY() - y);
+        }
+    }
+
+    public void onMessage() {
+        inputBar.reset();
     }
 
     @Override
@@ -121,10 +128,26 @@ public class ChatScreen extends SafeScreen {
             if (getFocused() == inputBar) return true;
             setFocused(inputBar);
             return true;
+        } else if (chatDisplay.mouseClicked(mouseX, mouseY, button)) {
+            chatDisplay.playDownSound(MinecraftClient.getInstance().getSoundManager());
+            if (button == 0) this.setDragging(true);
+            if (getFocused() == chatDisplay) return true;
+            setFocused(chatDisplay);
+            return true;
         }
 
         setFocused(null);
         return false;
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (!inputBar.isHovered() && chatDisplay != null) {
+            if (chatDisplay.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)) {
+                return true;
+            }
+        }
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
     @Override
@@ -149,7 +172,15 @@ public class ChatScreen extends SafeScreen {
         return menuHeight;
     }
 
+    public int getWidth() {
+        return menuWidth;
+    }
+
     public ChatDisplay getChatDisplay() {
         return chatDisplay;
+    }
+
+    public InputBar getInputBar() {
+        return inputBar;
     }
 }

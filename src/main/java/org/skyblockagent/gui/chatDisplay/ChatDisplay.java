@@ -7,6 +7,7 @@ import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
+import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.inputBar.CursorPosition;
 import org.skyblockagent.gui.inputBar.Scrollbar;
 import org.skyblockagent.managers.ChatManager;
@@ -43,8 +44,14 @@ public class ChatDisplay extends ClickableWidget {
         yOffset += chatMessage.getHeight() + 5;
     }
 
+    public void updateHeight(int height) {
+        this.height = height;
+        init();
+    }
+
     public void init() {
-        scrollbar.init(x, y, width, 10);
+        ChatScreen chatScreen = ChatScreen.INSTANCE;
+        scrollbar.init(y + 10, y + height - 10, chatScreen.getX() + chatScreen.getWidth());
         updateScrollPosition(yOffset > height);
     }
 
@@ -69,22 +76,45 @@ public class ChatDisplay extends ClickableWidget {
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         List<ChatMessage> chatMessages = ChatManager.INSTANCE.session.getChatMessages();
 
+        context.enableScissor(x, y, x + width, y + height + 12);
         context.getMatrices().push();
         context.getMatrices().translate(0, -scrollOffset, 0);
 
-        for (ChatMessage chatMessage : chatMessages) {
-            chatMessage.render(context);
+        for (int i = chatMessages.size() - 1; i >= 0; i--) {
+            ChatMessage chatMessage = chatMessages.get(i);
+
+            int messageTopY = chatMessage.getY();
+            int messageBottomY = messageTopY + chatMessage.getHeight();
+
+            if (messageBottomY <= y + scrollOffset) {
+                break;
+            }
+
+            if (messageTopY < y + scrollOffset + height) {
+                chatMessage.render(context);
+            }
         }
 
         context.getMatrices().pop();
+        context.disableScissor();
 
-        if (scrollbar.isVisible()) scrollbar.render(context, mouseX, mouseY);
+        scrollbar.render(context, mouseX, mouseY);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (scrollbar.isHovered(mouseX, mouseY)) {
+            scrollbar.setDragging(true);
+            return true;
+        }
+
+        return false;
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (isScrollable) {
-            float scrollDelta = (float) verticalAmount * 55f / (height - yOffset);
+            float scrollDelta = (float) verticalAmount * 55f / (yOffset - height);
             scrollPercentage = MathHelper.clamp(scrollPercentage - scrollDelta, 0.0f, 1.0f);
             init();
             return true;
@@ -92,40 +122,31 @@ public class ChatDisplay extends ClickableWidget {
         return false;
     }
 
-//    @Override
-//    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-//        if (scrollbar.isDragging()) {
-//            int scrollTrackStartY = textEditor.getY();
-//            int scrollTrackEndY = textEditor.getY() + textEditor.getHeight() - scrollbar.getHeight();
-//
-//            double newBarY = MathHelper.clamp(scrollbar.getY() + deltaY, scrollTrackStartY, scrollTrackEndY);
-//            double scrollPercentage = (newBarY - scrollTrackStartY) / (scrollTrackEndY - scrollTrackStartY);
-//            scrollOffset = (float) (scrollPercentage * getMaxScroll());
-//            setScrollPercentage(scrollPercentage);
-//
-//            scrollbar.update(textEditor.getHeight(), getLinesHeight(), scrollPercentage);
-//            return true;
-//        }
-//
-//        if (textEditor.isFocused() && selectingText) {
-//            CursorPosition draggedPosition = mapMouseToCursor(mouseX, mouseY);
-//            inputState.setSelectionEnd(draggedPosition);
-//            inputState.setCursorPosition(draggedPosition);
-//
-//            this.dragging = true;
-//            this.mouseY = mouseY;
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    @Override
-//    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-//        dragging = false;
-//        selectingText = false;
-//        scrollbar.setDragging(false);
-//        return super.mouseReleased(mouseX, mouseY, button);
-//    }
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (scrollbar.isDragging()) {
+            int minY = scrollbar.getMinY();
+            int maxY = scrollbar.getMaxY();
+            int barHeight = scrollbar.getHeight();
+
+            double newBarY = MathHelper.clamp(scrollbar.getY() + deltaY, minY, maxY - barHeight);
+            scrollPercentage = (newBarY - minY) / ((maxY - minY) - barHeight);
+            scrollOffset = (float) (scrollPercentage * (yOffset - height));
+
+            scrollbar.update(height, yOffset, scrollPercentage);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (scrollbar.isDragging()) {
+            scrollbar.setDragging(false);
+            return true;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
 
     @Override
     protected void appendClickableNarrations(NarrationMessageBuilder builder) {

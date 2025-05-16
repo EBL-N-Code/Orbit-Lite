@@ -69,19 +69,19 @@ public class InputBar extends ClickableWidget {
         }
     }
 
-    public void reset(boolean firstMessage) {
+    public void reset() {
         textEditor.reset();
         scrollOffset = 0f;
-        height = baseHeight + LINE_HEIGHT;
-
-        if (firstMessage) {
-            ChatScreen chatScreen = ChatScreen.INSTANCE;
-            y = chatScreen.getY() + chatScreen.getHeight() - height - Y_OFFSET;
-            setY(y);
-        }
 
         init();
         refreshLayout(true);
+    }
+
+    public void moveDown() {
+        height = baseHeight + LINE_HEIGHT;
+        ChatScreen chatScreen = ChatScreen.INSTANCE;
+        y = chatScreen.getY() + chatScreen.getHeight() - height - Y_OFFSET;
+        setY(y);
     }
 
     private void init() {
@@ -99,7 +99,10 @@ public class InputBar extends ClickableWidget {
         sendButton.init(x + width - (cornerRadius / 2) - SendButton.SIZE, y + height - cornerRadius - SendButton.SIZE + 6);
 
         // Scrollbar
-        scrollbar.init(x, y, width, cornerRadius);
+        scrollbar.init(y + cornerRadius, textEditor.getY() + textEditor.getHeight(), x + width);
+
+        // ChatDisplay
+        ChatScreen.INSTANCE.update();
     }
 
     /**
@@ -182,7 +185,7 @@ public class InputBar extends ClickableWidget {
         textEditor.render(context, scrollOffset);
         controlButtons.forEach(b -> b.render(context, mouseX, mouseY));
         sendButton.render(context, mouseX, mouseY);
-        if (scrollbar.isVisible()) scrollbar.render(context, mouseX, mouseY);
+        scrollbar.render(context, mouseX, mouseY);
 
         context.getMatrices().pop();
     }
@@ -200,7 +203,7 @@ public class InputBar extends ClickableWidget {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         this.lastSwitchFocusTime = Util.getMeasuringTimeMs();
 
-        if (scrollbar.isVisible() && scrollbar.isHovered(mouseX, mouseY)) {
+        if (scrollbar.isHovered(mouseX, mouseY)) {
             scrollbar.setDragging(true);
             return true;
         }
@@ -246,11 +249,12 @@ public class InputBar extends ClickableWidget {
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         if (scrollbar.isDragging()) {
-            int scrollTrackStartY = textEditor.getY();
-            int scrollTrackEndY = textEditor.getY() + textEditor.getHeight() - scrollbar.getHeight();
+            int minY = scrollbar.getMinY();
+            int maxY = scrollbar.getMaxY();
+            int barHeight = scrollbar.getHeight();
 
-            double newBarY = MathHelper.clamp(scrollbar.getY() + deltaY, scrollTrackStartY, scrollTrackEndY);
-            double scrollPercentage = (newBarY - scrollTrackStartY) / (scrollTrackEndY - scrollTrackStartY);
+            double newBarY = MathHelper.clamp(scrollbar.getY() + deltaY, minY, maxY - barHeight);
+            double scrollPercentage = (newBarY - minY) / ((maxY - minY) - barHeight);
             scrollOffset = (float) (scrollPercentage * getMaxScroll());
             setScrollPercentage(scrollPercentage);
 

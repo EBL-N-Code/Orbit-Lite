@@ -21,22 +21,22 @@ public class Session {
 
     public void init() {
         chatId = UUID.randomUUID();
+        ChatScreen.INSTANCE.getInputBar().moveDown();
         ChatScreen.INSTANCE.initDisplay();
     }
 
     public void addMessage() {
-        boolean firstMessage = isPreview();
-        if (firstMessage) init();
+        if (isPreview()) init();
 
         ChatScreen chatScreen = ChatScreen.INSTANCE;
 
         ChatMessage chatMessage = new UserMessage(new ArrayList<>(inputState.getLines()));
-        chatScreen.getChatDisplay().initMessage(chatMessage);
-        chatScreen.getChatDisplay().init();
         chatMessages.add(chatMessage);
 
         inputState.reset();
-        ChatScreen.INSTANCE.onMessage(firstMessage);
+        chatScreen.getChatDisplay().initMessage(chatMessage);
+        chatScreen.getChatDisplay().init();
+        chatScreen.onMessage();
     }
 
     public boolean isPreview() {
