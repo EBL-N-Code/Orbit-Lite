@@ -113,16 +113,6 @@ public class ChatScreen extends SafeScreen {
         return true;
     }
 
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        if (!inputBar.isHovered()) {
-            if (chatDisplay.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)) {
-                return true;
-            }
-        }
-        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
-    }
-
     public void playDownSound() {
         SoundManager soundManager = MinecraftClient.getInstance().getSoundManager();
         soundManager.play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));

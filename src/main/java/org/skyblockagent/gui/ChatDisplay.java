@@ -12,12 +12,13 @@ public class ChatDisplay extends Widget {
     private float scrollOffset = 0f;
     private double scrollPercentage = 1f;
     private int yOffset;
-    private int maxWidth;
+    private int maxWidth, fullWidth;
 
     @Override
     protected void init() {
         this.yOffset = 10;
         this.maxWidth = (width * 2) / 3;
+        this.fullWidth = ChatScreen.INSTANCE.getChatWidth();
 
         for (ChatMessage chatMessage : ChatManager.INSTANCE.getSession().getChatMessages()) {
             chatMessage.init(x, y + yOffset, width, maxWidth);
@@ -131,5 +132,10 @@ public class ChatDisplay extends Widget {
             return true;
         }
         return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return mouseX >= x - ((double) fullWidth / 2) && mouseY >= y && mouseX < x + width + ((double) fullWidth / 2) && mouseY < y + height;
     }
 }
