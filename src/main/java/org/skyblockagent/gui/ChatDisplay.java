@@ -1,67 +1,52 @@
-package org.skyblockagent.gui.chatDisplay;
+package org.skyblockagent.gui;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
-import org.skyblockagent.gui.ChatScreen;
-import org.skyblockagent.gui.inputBar.CursorPosition;
-import org.skyblockagent.gui.inputBar.Scrollbar;
 import org.skyblockagent.managers.ChatManager;
 import org.skyblockagent.managers.message.ChatMessage;
-import org.skyblockagent.utils.render.RenderUtils;
 
 import java.util.List;
 
-public class ChatDisplay extends ClickableWidget {
-    private int x, y;
-    private int maxWidth;
-    private int yOffset = 20;
+public class ChatDisplay extends Widget {
+    private final Scrollbar scrollbar = new Scrollbar();
     private float scrollOffset = 0f;
     private double scrollPercentage = 1f;
-    private boolean isScrollable;
-    private final Scrollbar scrollbar;
+    private int yOffset;
+    private int maxWidth;
 
-    public ChatDisplay(int x, int y, int width, int height) {
-        super(x, y, width, height, Text.empty());
-        this.x = x;
-        this.y = y;
+    @Override
+    protected void init() {
+        this.yOffset = 10;
         this.maxWidth = (width * 2) / 3;
-        this.scrollbar = new Scrollbar();
 
-        for (ChatMessage chatMessage : ChatManager.INSTANCE.session.getChatMessages()) {
-            initMessage(chatMessage);
+        for (ChatMessage chatMessage : ChatManager.INSTANCE.getSession().getChatMessages()) {
+            chatMessage.init(x, y + yOffset, width, maxWidth);
+            addSpace(chatMessage.getHeight() + 5);
         }
-        init();
+        updateScrollBar();
     }
 
-    public void initMessage(ChatMessage chatMessage) {
-        chatMessage.setDimentions(maxWidth);
-        chatMessage.setPosition(x + width - chatMessage.getWidth(), y + yOffset);
-        yOffset += chatMessage.getHeight() + 5;
+    public void onMessage(ChatMessage chatMessage) {
+        chatMessage.init(x, y + yOffset, width, maxWidth);
+
+        scrollPercentage = 1f;
+        addSpace(chatMessage.getHeight() + 5);
+        updateScrollBar();
+    }
+
+    public void addSpace(int space) {
+        yOffset += space;
     }
 
     public void updateHeight(int height) {
         this.height = height;
-        init();
+        updateScrollBar();
     }
 
-    public void init() {
-        ChatScreen chatScreen = ChatScreen.INSTANCE;
-        scrollbar.init(y + 10, y + height - 10, chatScreen.getX() + chatScreen.getWidth());
-        updateScrollPosition(yOffset > height);
-    }
+    public void updateScrollBar() {
+        scrollbar.init(y + 5, y + height - 5, ChatScreen.INSTANCE.getRight());
 
-    private void updateScrollPosition(boolean scrollable) {
-        if (isScrollable && !scrollable) {
-            scrollOffset = 0f;
-            scrollPercentage = 1f;
-        }
-
-        isScrollable = scrollable;
+        boolean isScrollable = yOffset > height;
         scrollbar.setVisibility(isScrollable);
 
         if (isScrollable) {
@@ -74,9 +59,9 @@ public class ChatDisplay extends ClickableWidget {
 
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-        List<ChatMessage> chatMessages = ChatManager.INSTANCE.session.getChatMessages();
+        List<ChatMessage> chatMessages = ChatManager.INSTANCE.getSession().getChatMessages();
 
-        context.enableScissor(x, y, x + width, y + height + 12);
+        context.enableScissor(x, y, x + width, y + height + 8);
         context.getMatrices().push();
         context.getMatrices().translate(0, -scrollOffset, 0);
 
@@ -113,10 +98,10 @@ public class ChatDisplay extends ClickableWidget {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        if (isScrollable) {
+        if (scrollbar.isVisible()) {
             float scrollDelta = (float) verticalAmount * 55f / (yOffset - height);
             scrollPercentage = MathHelper.clamp(scrollPercentage - scrollDelta, 0.0f, 1.0f);
-            init();
+            updateScrollBar();
             return true;
         }
         return false;
@@ -146,9 +131,5 @@ public class ChatDisplay extends ClickableWidget {
             return true;
         }
         return super.mouseReleased(mouseX, mouseY, button);
-    }
-
-    @Override
-    protected void appendClickableNarrations(NarrationMessageBuilder builder) {
     }
 }

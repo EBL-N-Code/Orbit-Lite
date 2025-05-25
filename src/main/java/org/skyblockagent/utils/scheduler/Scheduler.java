@@ -15,7 +15,7 @@ public class Scheduler {
      * @param screenSupplier A supplier that provides the screen to open.
      */
     public static Command<FabricClientCommandSource> openScreen(Supplier<Screen> screenSupplier) {
-        return context -> openScreen(screenSupplier.get());
+        return _ -> openScreen(screenSupplier.get());
     }
 
     private static int openScreen(Screen screen) {

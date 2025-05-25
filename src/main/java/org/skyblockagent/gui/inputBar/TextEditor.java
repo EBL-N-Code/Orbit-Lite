@@ -22,18 +22,15 @@ public class TextEditor {
     private final TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
     private final InputBar inputBar;
     private final InputState inputState;
-    private final int maxLineWidth;
     private final Deque<EditorState> undoStack = new ArrayDeque<>();
     private final Deque<EditorState> redoStack = new ArrayDeque<>();
     private long lastSnapshotTime = 0;
-    private boolean focused = true;
-    private int x, y;
-    private int width, height;
+    private int x, y, width, height;
+    private boolean focused = false;
 
-    protected TextEditor(InputBar inputBar, int maxLineWidth) {
+    protected TextEditor(InputBar inputBar) {
         this.inputBar = inputBar;
         this.inputState = inputBar.inputState;
-        this.maxLineWidth = maxLineWidth;
     }
 
     protected void init(int x, int y, int width, int height) {
@@ -41,12 +38,6 @@ public class TextEditor {
         this.y = y;
         this.width = width;
         this.height = height;
-    }
-
-    protected void reset() {
-        undoStack.clear();
-        redoStack.clear();
-        lastSnapshotTime = 0;
     }
 
     /**
@@ -62,8 +53,10 @@ public class TextEditor {
 
         List<String> pasteLines = text.lines().toList();
         List<String> lines = getLines();
+
         CursorPosition cursorPosition = getCursorPosition();
         String currentLine = lines.get(cursorPosition.line);
+
         int col = Math.min(cursorPosition.column, currentLine.length());
         String before = currentLine.substring(0, col);
         String after = currentLine.substring(col);
@@ -110,7 +103,7 @@ public class TextEditor {
             }
         }
 
-        inputBar.refreshLayout(true);
+        inputBar.update(true);
     }
 
     private void backspace() {
@@ -228,7 +221,7 @@ public class TextEditor {
     }
 
     protected void render(DrawContext context, float scrollOffset) {
-        context.enableScissor(x, y, x + width, y + height - 1);
+        context.enableScissor(x, y, x + width + 2, y + height - 1);
 
         context.getMatrices().push();
         context.getMatrices().translate(0, -scrollOffset, 0);
@@ -382,8 +375,7 @@ public class TextEditor {
 
         if (!shiftKeyPressed) setSelectionStart(pos);
 
-        inputBar.refreshLayout(true);
-        inputBar.lastSwitchFocusTime = Util.getMeasuringTimeMs();
+        inputBar.update(true);
     }
 
     private void selectWordAt(CursorPosition pos) {
@@ -413,14 +405,16 @@ public class TextEditor {
     /**
      * Wraps text lines to fit within the maximum line width, adjusting the cursor position as needed.
      */
-    protected void wrapLines() {
-        List<String> wrappedLines = new ArrayList<>();
+    protected void wrapLines(int maxWidth) {
         List<String> lines = getLines();
+        if (lines.isEmpty() || lines.getFirst().isEmpty()) return;
+
+        List<String> wrappedLines = new ArrayList<>();
         CursorPosition cursorPosition = getCursorPosition();
 
         int i = 0;
         for (String line : lines) {
-            List<StringVisitable> list = textRenderer.getTextHandler().wrapLines(line, maxLineWidth, Style.EMPTY);
+            List<StringVisitable> list = textRenderer.getTextHandler().wrapLines(line, maxWidth, Style.EMPTY);
             if (list.isEmpty()) list.add(StringVisitable.plain(""));
             boolean wrapped = list.size() > 1;
 
@@ -496,7 +490,13 @@ public class TextEditor {
         setCursorPosition(state.cursor());
         setSelectionStart(state.selectionStart());
         setSelectionEnd(state.selectionEnd());
-        inputBar.refreshLayout(true);
+        inputBar.update(true);
+    }
+
+    protected void reset() {
+        undoStack.clear();
+        redoStack.clear();
+        lastSnapshotTime = 0;
     }
 
     protected boolean isEmpty() {
@@ -517,8 +517,8 @@ public class TextEditor {
         setCursor(new CursorPosition(cursorPosition.line, getLines().get(cursorPosition.line).length()), shiftDown);
     }
 
-    protected boolean isHovered(double mouseX, double mouseY) {
-        return mouseX >= x - 10 && mouseX <= x + width + 10 && mouseY >= y - 8 && mouseY <= y + height + 4;
+    public int getX() {
+        return x;
     }
 
     protected int getY() {

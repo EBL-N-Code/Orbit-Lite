@@ -2,32 +2,29 @@ package org.skyblockagent.gui;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.sound.PositionedSoundInstance;
+import net.minecraft.client.sound.SoundManager;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
-import org.skyblockagent.gui.chatDisplay.ChatDisplay;
-import org.skyblockagent.gui.inputBar.Button;
+import org.joml.Vector4f;
 import org.skyblockagent.gui.inputBar.InputBar;
+import org.skyblockagent.gui.others.SafeScreen;
 import org.skyblockagent.managers.ChatManager;
-import org.skyblockagent.managers.Session;
-import org.skyblockagent.managers.message.ChatMessage;
 import org.skyblockagent.utils.render.RenderUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
+import java.util.Optional;
 
 public class ChatScreen extends SafeScreen {
     public static ChatScreen INSTANCE;
-    private static final int CHAT_WIDTH = 520;//443
-    private static final int CHAT_HEIGHT = 320;//282
-    private static final int CHAT_ROUNDNESS = 8;
-    private static final int FILL_COLOR = 0xFF1B1C1D;
-    private static final int OUTLINE_COLOR = 0xFF4D4D4D;
-    private static final float OUTLINE_THICKNESS = 0.5f;
+    private static final int CHAT_WIDTH = 520;
+    private static final int CHAT_HEIGHT = 320;
+    private final int headerHeight = 25;
     private final Screen parent;
-    private int x, y;
-    private int menuWidth, menuHeight;
+    private int x, y, menuWidth, menuHeight;
     private InputBar inputBar;
+    private Sidebar sidebar;
     private ChatDisplay chatDisplay;
 
     public ChatScreen(Screen parent) {
@@ -38,78 +35,52 @@ public class ChatScreen extends SafeScreen {
 
     @Override
     protected void init() {
-        // Main Menu
         menuWidth = Math.min(CHAT_WIDTH, this.width - 24);
         menuHeight = Math.min(CHAT_HEIGHT, this.height - 12);
         x = (this.width - menuWidth) / 2;
         y = (this.height - menuHeight) / 2;
 
-        // Input Bar
-        initInputBar();
+        sidebar = new Sidebar(x, y, (int) (menuWidth * 0.2f), menuHeight);
+        chatDisplay = new ChatDisplay();
+        inputBar = new InputBar();
 
-        // ChatDisplay
-        if (!ChatManager.INSTANCE.session.isPreview()) initDisplay();
+        initializeDisplay();
 
-        setInitialFocus(inputBar);
-    }
-
-    public void initInputBar() {
-        Session session = ChatManager.INSTANCE.session;
-
-        // Buttons
-        List<Button> buttons = new ArrayList<>();
-        session.getInputState().getOptions().forEach((k, v) -> {
-            Consumer<Boolean> consumer = value -> session.getInputState().setOption(k, value);
-            buttons.add(new Button(k, v, consumer));
-        });
-
-        // Input Bar
-        int barWidth = (int) (menuWidth * 0.7f);
-        int barHeight = (int) (menuWidth * 0.1f);
-        int barX = x + (menuWidth - barWidth) / 2;
-        int barY = y;
-
-        int cornerRadius = Math.min(InputBar.BAR_ROUNDNESS, barHeight / 2);
-        int baseHeight = Button.BUTTON_HEIGHT + cornerRadius * 2;
-        barHeight = Math.max(barHeight, InputBar.LINE_HEIGHT + baseHeight);
-
-        barY += ChatManager.INSTANCE.session.isPreview() ? (menuHeight - barHeight) / 2 : menuHeight - barHeight - InputBar.Y_OFFSET;
-        barHeight += (session.getInputState().getLines().size() - 1) * InputBar.LINE_HEIGHT;
-
-        inputBar = new InputBar(barX, barY, barWidth, barHeight, cornerRadius, baseHeight, buttons);
+        addDrawableChild(sidebar);
         addDrawableChild(inputBar);
-    }
-
-    public void initDisplay() {
-        chatDisplay = new ChatDisplay(inputBar.getX(), y, inputBar.getWidth(), inputBar.getY() - y);
         addDrawableChild(chatDisplay);
+        setFocused(inputBar);
     }
 
-    //Should be called on every widget change
-    public void update() {
-        if (chatDisplay != null) {
-            chatDisplay.updateHeight(inputBar.getY() - y);
-        }
-    }
+    public void initializeDisplay() {
+        int displayWidth = (int) (getChatWidth() * (sidebar.isCollapsed() ? 0.65f : 0.8f));
+        int displayHeight = getChatHeight();
+        int displayX = getLeft() + (getChatWidth() - displayWidth) / 2;
+        chatDisplay.init(displayX, getTop() + 1, displayWidth, displayHeight);
 
-    public void onMessage() {
-        inputBar.reset();
+        int barHeight = 10 + (8 * 2);
+        inputBar.init(displayX, getBottom() - barHeight - InputBar.Y_OFFSET, displayWidth, barHeight);
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
+
+        if (ChatManager.INSTANCE.getSession().isEmpty()) {
+            renderGreatingText(context, getLeft() + (getChatWidth() / 2), (getChatHeight() / 2) * 3);
+        }
     }
 
     @Override
     public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         super.renderBackground(context, mouseX, mouseY, deltaTicks);
 
-        RenderUtils.drawRoundedRect(context, x,y, menuWidth, menuHeight, CHAT_ROUNDNESS, FILL_COLOR, OUTLINE_THICKNESS, OUTLINE_COLOR);
+        RenderUtils.drawRect(context, x, y, menuWidth, 25, new Vector4f(8f, 0f, 8f, 0f), 0xFF1F2227);//0xFF1A1C22
+        RenderUtils.drawRect(context, x, y + 25, menuWidth, menuHeight - 25, new Vector4f(0f, 8f, 0f, 8f), 0xFF141519);
 
-        if (ChatManager.INSTANCE.session.isPreview()) {
-            renderGreatingText(context, x + (menuWidth / 2), inputBar.getY() - 20);
-        }
+        RenderUtils.drawBorder(context, x + 1, y + 1, menuWidth - 2, menuHeight - 2, 7f, 2f, 0x10FFFFFF);
+        context.drawHorizontalLine(x, x + menuWidth - 1, y + 25, 0xFF000000);
+        RenderUtils.drawBorder(context, x, y, menuWidth, menuHeight, 8f, 1f, 0xFF000000);
     }
 
     public void renderGreatingText(DrawContext context, int x, int y) {
@@ -121,28 +92,30 @@ public class ChatScreen extends SafeScreen {
     }
 
     @Override
+    public void tick() {
+        inputBar.tick();
+    }
+
+    @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (inputBar.mouseClicked(mouseX, mouseY, button)) {
-            inputBar.playDownSound(MinecraftClient.getInstance().getSoundManager());
-            if (button == 0) this.setDragging(true);
-            if (getFocused() == inputBar) return true;
-            setFocused(inputBar);
-            return true;
-        } else if (chatDisplay.mouseClicked(mouseX, mouseY, button)) {
-            chatDisplay.playDownSound(MinecraftClient.getInstance().getSoundManager());
-            if (button == 0) this.setDragging(true);
-            if (getFocused() == chatDisplay) return true;
-            setFocused(chatDisplay);
-            return true;
+        Optional<Element> optional = this.hoveredElement(mouseX, mouseY);
+        if (optional.isPresent()) {
+            Element element = optional.get();
+            if (element.mouseClicked(mouseX, mouseY, button)) {
+                playDownSound();
+                if (button == 0) this.setDragging(true);
+                if (getFocused() != element) this.setFocused(element);
+                return true;
+            }
         }
 
         setFocused(null);
-        return false;
+        return true;
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        if (!inputBar.isHovered() && chatDisplay != null) {
+        if (!inputBar.isHovered()) {
             if (chatDisplay.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)) {
                 return true;
             }
@@ -150,30 +123,38 @@ public class ChatScreen extends SafeScreen {
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
-    @Override
-    public void tick() {
-        inputBar.tick();
+    public void playDownSound() {
+        SoundManager soundManager = MinecraftClient.getInstance().getSoundManager();
+        soundManager.play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
     }
 
     @Override
     public void close() {
-        MinecraftClient.getInstance().setScreen(this.parent);
+        MinecraftClient.getInstance().setScreen(parent);
     }
 
-    public int getX() {
-        return x;
+    public int getChatWidth() {
+        return sidebar.isCollapsed() ? menuWidth : menuWidth - sidebar.getWidth();
     }
 
-    public int getY() {
-        return y;
+    public int getChatHeight() {
+        return height - headerHeight;
     }
 
-    public int getHeight() {
-        return menuHeight;
+    public int getLeft() {
+        return sidebar.isCollapsed() ? x : x + sidebar.getWidth();
     }
 
-    public int getWidth() {
-        return menuWidth;
+    public int getRight() {
+        return x + menuWidth;
+    }
+
+    public int getTop() {
+        return y + headerHeight;
+    }
+
+    public int getBottom() {
+        return y + menuHeight;
     }
 
     public ChatDisplay getChatDisplay() {

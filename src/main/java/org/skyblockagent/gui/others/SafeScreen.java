@@ -1,4 +1,4 @@
-package org.skyblockagent.gui;
+package org.skyblockagent.gui.others;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;

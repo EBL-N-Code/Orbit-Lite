@@ -4,7 +4,6 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.systems.RenderPass;
 import net.minecraft.client.render.BuiltBuffer;
 import net.minecraft.client.render.RenderLayer;
-import org.joml.Matrix4f;
 import org.skyblockagent.utils.render.UniformRenderLayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -35,8 +34,6 @@ public class RenderLayerMixin implements UniformRenderLayer {
         uniforms.forEach((name, value) -> {
             switch (value) {
                 case float[] floats -> pass.setUniform(name, floats);
-                case int[] ints -> pass.setUniform(name, ints);
-                case Matrix4f matrix -> pass.setUniform(name, matrix);
                 case Float floot -> pass.setUniform(name, floot);
                 default -> throw new IllegalArgumentException("Unsupported uniform type: " + value.getClass());
             }// default -> {}

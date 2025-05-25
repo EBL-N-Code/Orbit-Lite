@@ -1,6 +1,7 @@
 package org.skyblockagent.managers;
 
 import org.skyblockagent.gui.ChatScreen;
+import org.skyblockagent.managers.message.AIMessage;
 import org.skyblockagent.managers.message.ChatMessage;
 import org.skyblockagent.managers.message.UserMessage;
 
@@ -10,7 +11,7 @@ import java.util.UUID;
 
 public class Session {
     private UUID chatId;
-    private InputState inputState = new InputState();
+    private final InputState inputState = new InputState();
     private final List<ChatMessage> chatMessages = new ArrayList<>();
 
     public Session() {}
@@ -21,30 +22,29 @@ public class Session {
 
     public void init() {
         chatId = UUID.randomUUID();
-        ChatScreen.INSTANCE.getInputBar().moveDown();
-        ChatScreen.INSTANCE.initDisplay();
     }
 
-    public void addMessage() {
-        if (isPreview()) init();
+    public void send() {
+        if (chatId == null) init();
 
-        ChatScreen chatScreen = ChatScreen.INSTANCE;
-
-        ChatMessage chatMessage = new UserMessage(new ArrayList<>(inputState.getLines()));
-        chatMessages.add(chatMessage);
+        UserMessage userMessage = new UserMessage(new ArrayList<>(inputState.getLines()));
+        chatMessages.add(userMessage);
 
         inputState.reset();
-        chatScreen.getChatDisplay().initMessage(chatMessage);
-        chatScreen.getChatDisplay().init();
-        chatScreen.onMessage();
-    }
+        ChatScreen.INSTANCE.getInputBar().reset();
 
-    public boolean isPreview() {
-        return chatId == null;
+        AIMessage aiMessage = new AIMessage(new ArrayList<>(List.of("")));
+        chatMessages.add(aiMessage);
+
+        ChatManager.INSTANCE.sendRequest(aiMessage);
     }
 
     public InputState getInputState() {
         return inputState;
+    }
+
+    public boolean isEmpty() {
+        return chatMessages.isEmpty();
     }
 
     public List<ChatMessage> getChatMessages() {

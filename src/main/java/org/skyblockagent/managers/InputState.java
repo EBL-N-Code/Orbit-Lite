@@ -3,9 +3,7 @@ package org.skyblockagent.managers;
 import org.skyblockagent.gui.inputBar.CursorPosition;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class InputState {
     private final List<String> lines = new ArrayList<>(List.of(""));
@@ -14,26 +12,13 @@ public class InputState {
     private CursorPosition selectionEnd = new CursorPosition(0, 0);
     private double scrollPercentage;
 
-    private final Map<String, Boolean> options = new HashMap<>(){{
-        put("Search", false);
-        put("DeepResearch", false);
-    }};
-
-    protected void reset() {
+    public void reset() {
         lines.clear();
         lines.add("");
         cursorPosition = new CursorPosition(0, 0);
         selectionStart = new CursorPosition(0, 0);
         selectionEnd = new CursorPosition(0, 0);
         scrollPercentage = 0d;
-    }
-
-    public Map<String, Boolean> getOptions() {
-        return options;
-    }
-
-    public void setOption(String key, boolean value) {
-        options.put(key, value);
     }
 
     public List<String> getLines() {

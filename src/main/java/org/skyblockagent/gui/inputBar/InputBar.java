@@ -3,42 +3,33 @@ package org.skyblockagent.gui.inputBar;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.screen.narration.NarrationPart;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.text.Text;
 import net.minecraft.util.StringHelper;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.glfw.GLFW;
 import org.skyblockagent.gui.ChatScreen;
+import org.skyblockagent.gui.Scrollbar;
+import org.skyblockagent.gui.Widget;
 import org.skyblockagent.managers.ChatManager;
 import org.skyblockagent.managers.InputState;
 import org.skyblockagent.utils.render.RenderUtils;
 
 import java.util.List;
 
-public class InputBar extends ClickableWidget {
-    private static final int BAR_FILL_COLOR = 0xFF1B1C1D;
-    private static final int BAR_OUTLINE_COLOR = 0xFF424447;
-    private static final float BAR_OUTLINE_THICKNESS = 0.5f;
+public class InputBar extends Widget {
+    private static final int BAR_FILL_COLOR = 0xFF1C1F24;
+    private static final int BAR_OUTLINE_COLOR = 0xFF27292E;
     public static final int Y_OFFSET = 10;
     public static final int LINE_HEIGHT = 10;
-    private static final long DOUBLE_CLICK_MS = 250;
+    private static final int MAX_HEIGHT = LINE_HEIGHT * 5;
     private static final float SCROLL_SENSITIVITY = 55f;
     private static final float AUTO_SCROLL_SPEED = 1f;
-    public static final int BAR_ROUNDNESS = 12;
-    private final int maxVisibleLines = 5;
-    private final int maxVisibleLinesHeight = LINE_HEIGHT * maxVisibleLines;
-    private final int cornerRadius;
-    private final int x;
-    private int y;
-    private final int baseHeight;
-    private final Scrollbar scrollbar;
-    protected final TextEditor textEditor;
-    private final SendButton sendButton;
-    private final List<Button> controlButtons;
-    protected long lastSwitchFocusTime = Util.getMeasuringTimeMs();
+    private static final int CORNER_RADIUS = 8;
+    private final SendButton sendButton = new SendButton();
+    private final Scrollbar scrollbar = new Scrollbar();
+    protected TextEditor textEditor;
+    protected InputState inputState;
+    protected long lastSwitchFocusTime;
     private boolean selectingText = false;
     private boolean dragging = false;
     private long lastClickTime = 0;
@@ -46,87 +37,34 @@ public class InputBar extends ClickableWidget {
     private double mouseY;
     private boolean isScrollable;
     private float scrollOffset = 0f;
-    protected final InputState inputState;
+    private boolean disabled;
 
-    public InputBar(int x, int y, int width, int height, int cornerRadius, int baseHeight, List<Button> controlButtons) {
-        super(x, y, width, height, Text.empty());
-        this.x = x;
-        this.y = y;
-        this.cornerRadius = cornerRadius;
-        this.baseHeight = baseHeight;
+    @Override
+    protected void init() {
+        this.disabled = ChatManager.INSTANCE.hasActiveRequest();
+        this.inputState = ChatManager.INSTANCE.getSession().getInputState();
+        this.textEditor = new TextEditor(this);
 
-        this.controlButtons = controlButtons;
-        this.inputState = ChatManager.INSTANCE.session.getInputState();
-        this.textEditor = new TextEditor(this, this.width - cornerRadius * 2);
-        this.sendButton = new SendButton(this);
-        this.scrollbar = new Scrollbar();
-
-        //preview or no maybe
-        if (ChatManager.INSTANCE.session.getInputState().getLines().isEmpty()) {
-            init();
-        } else {
-            refreshLayout(true);
-        }
+        update(true);
     }
 
-    public void reset() {
-        textEditor.reset();
-        scrollOffset = 0f;
-
-        init();
-        refreshLayout(true);
-    }
-
-    public void moveDown() {
-        height = baseHeight + LINE_HEIGHT;
+    protected void update(boolean scrollToCursor) {
         ChatScreen chatScreen = ChatScreen.INSTANCE;
-        y = chatScreen.getY() + chatScreen.getHeight() - height - Y_OFFSET;
-        setY(y);
-    }
-
-    private void init() {
-        // TextEditor
-        textEditor.init(x + cornerRadius, y + cornerRadius, width - cornerRadius * 2, Math.min(getLinesHeight(), maxVisibleLinesHeight));
-
-        // Buttons
-        int xOffset = 0;
-        for (Button button : controlButtons) {
-            button.init(x + cornerRadius + xOffset - 4, y + height - cornerRadius - button.getHeight() + 6);
-            xOffset += button.getWidth() + 5;
-        }
-
-        // Send Button
-        sendButton.init(x + width - (cornerRadius / 2) - SendButton.SIZE, y + height - cornerRadius - SendButton.SIZE + 6);
-
-        // Scrollbar
-        scrollbar.init(y + cornerRadius, textEditor.getY() + textEditor.getHeight(), x + width);
-
-        // ChatDisplay
-        ChatScreen.INSTANCE.update();
-    }
-
-    /**
-     * Updates the input bar's layout and scroll state based on the text editor's content.
-     *
-     * @param scrollToCursor If true, scrolls to ensure the cursor is visible.
-     */
-    protected void refreshLayout(boolean scrollToCursor) {
-        textEditor.wrapLines();
-
-        int linesHeight = getLinesHeight();
-        height = baseHeight + Math.min(maxVisibleLinesHeight, linesHeight);
-
-        ChatScreen chatScreen = ChatScreen.INSTANCE;
-        if (!ChatManager.INSTANCE.session.isPreview()) {
-            int maxY = chatScreen.getY() + chatScreen.getHeight() - Y_OFFSET;
-            y = maxY - height;
-            setY(y);
-        }
-
-        init();
-        updateScrollPosition(linesHeight > maxVisibleLinesHeight, scrollToCursor);
-
         lastSwitchFocusTime = Util.getMeasuringTimeMs();
+
+        int textHeight = Math.min(MAX_HEIGHT, getLinesHeight());
+        int textWidth = width - 40;
+        textEditor.wrapLines(textWidth);
+
+        height = CORNER_RADIUS * 2 + textHeight;
+        y = chatScreen.getBottom() - height - Y_OFFSET;
+
+        sendButton.init(x + width - SendButton.SIZE - 5, y + height - SendButton.SIZE - 5);
+        textEditor.init(x + CORNER_RADIUS, y + CORNER_RADIUS + 1, textWidth, textHeight);
+        scrollbar.init(textEditor.getY(), textEditor.getY() + textEditor.getHeight(), x + width - 22);
+        chatScreen.getChatDisplay().updateHeight(y - chatScreen.getTop());
+
+        updateScrollPosition(inputState.getLines().size() > MAX_HEIGHT / LINE_HEIGHT, scrollToCursor);
     }
 
     /**
@@ -136,10 +74,7 @@ public class InputBar extends ClickableWidget {
      * @param scrollToCursor If true, scrolls to ensure the cursor is visible.
      */
     private void updateScrollPosition(boolean scrollable, boolean scrollToCursor) {
-        if (isScrollable && !scrollable) {
-            scrollOffset = 0f;
-            setScrollPercentage(0f);
-        }
+        if (isScrollable && !scrollable) scrollOffset = 0f;
 
         isScrollable = scrollable;
         scrollbar.setVisibility(isScrollable);
@@ -167,12 +102,24 @@ public class InputBar extends ClickableWidget {
         // If cursor is above visible area
         if (cursorTopY <= scrollOffset) {
             scrollOffset = cursorTopY;
-        } else if (cursorBottomY > scrollOffset + maxVisibleLinesHeight) {
-            scrollOffset = (float) ((cursorBottomY - maxVisibleLinesHeight + LINE_HEIGHT) / LINE_HEIGHT) * LINE_HEIGHT;
+        } else if (cursorBottomY > scrollOffset + MAX_HEIGHT) {
+            scrollOffset = (float) ((cursorBottomY - MAX_HEIGHT + LINE_HEIGHT) / LINE_HEIGHT) * LINE_HEIGHT;
         }
 
         scrollOffset = MathHelper.clamp(scrollOffset, 0f, maxScroll);
         setScrollPercentage(scrollOffset / maxScroll);
+    }
+
+    public void reset() {
+        inputState = ChatManager.INSTANCE.getSession().getInputState();
+        textEditor.reset();
+        scrollOffset = 0f;
+
+        update(true);
+    }
+
+    public boolean canSend() {
+        return !textEditor.isEmpty() && !ChatManager.INSTANCE.hasActiveRequest();
     }
 
     @Override
@@ -180,10 +127,9 @@ public class InputBar extends ClickableWidget {
         context.getMatrices().push();
         context.getMatrices().translate(0f, 0f, 5f);
 
-        RenderUtils.drawRoundedRect(context, x, y, width, height, cornerRadius, BAR_FILL_COLOR, BAR_OUTLINE_THICKNESS, BAR_OUTLINE_COLOR);
+        RenderUtils.drawRect(context, x, y, width, height, CORNER_RADIUS, BAR_FILL_COLOR, 2f, BAR_OUTLINE_COLOR);
 
         textEditor.render(context, scrollOffset);
-        controlButtons.forEach(b -> b.render(context, mouseX, mouseY));
         sendButton.render(context, mouseX, mouseY);
         scrollbar.render(context, mouseX, mouseY);
 
@@ -203,33 +149,25 @@ public class InputBar extends ClickableWidget {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         this.lastSwitchFocusTime = Util.getMeasuringTimeMs();
 
-        if (scrollbar.isHovered(mouseX, mouseY)) {
-            scrollbar.setDragging(true);
-            return true;
-        }
+        if (!disabled) {
+            if (scrollbar.isHovered(mouseX, mouseY)) {
+                scrollbar.setDragging(true);
+                return true;
+            }
 
-        if (textEditor.isHovered(mouseX, mouseY)) {
+            if (sendButton.isHovered(mouseX, mouseY)) {
+                if (canSend()) sendButton.onClick();
+                textEditor.setFocused(false);
+                return true;
+            }
+
             long currentTime = System.currentTimeMillis();
-            clickCount = currentTime - lastClickTime <= DOUBLE_CLICK_MS ? clickCount + 1 : 1;
+            clickCount = currentTime - lastClickTime <= MAX_DOUBLE_CLICK_INTERVAL ? clickCount + 1 : 1;
             lastClickTime = currentTime;
             textEditor.setFocused(true);
             textEditor.onClick(mapMouseToCursor(mouseX, mouseY), clickCount);
             selectingText = true;
             return true;
-        }
-
-        textEditor.setFocused(false);
-
-        if (sendButton.isHovered(mouseX, mouseY)) {
-            sendButton.onClick();
-            return true;
-        }
-
-        for (Button controlButton : controlButtons) {
-            if (controlButton.isHovered(mouseX, mouseY)) {
-                controlButton.onClick();
-                return true;
-            }
         }
 
         return false;
@@ -240,7 +178,7 @@ public class InputBar extends ClickableWidget {
         if (textEditor.isFocused() && isScrollable) {
             float scrollDelta = (float) verticalAmount * SCROLL_SENSITIVITY / getMaxScroll();
             setScrollPercentage(MathHelper.clamp(getScrollPercentage() - scrollDelta, 0.0f, 1.0f));
-            refreshLayout(false);
+            update(false);
             return true;
         }
         return false;
@@ -287,13 +225,13 @@ public class InputBar extends ClickableWidget {
      * moving the cursor accordingly.
      */
     private void autoScrollWhileDragging() {
-        int relativeY = (int) (mouseY - y - cornerRadius);
+        int relativeY = (int) (mouseY - y - CORNER_RADIUS);
         int maxScroll = getMaxScroll();
 
         if (relativeY < 0) {
             scrollOffset = Math.max(scrollOffset - AUTO_SCROLL_SPEED, 0f);
             textEditor.moveCursorVertical(-1, true); // Move cursor up
-        } else if (relativeY > maxVisibleLinesHeight) {
+        } else if (relativeY > MAX_HEIGHT) {
             scrollOffset = Math.min(scrollOffset + AUTO_SCROLL_SPEED, maxScroll);
             textEditor.moveCursorVertical(1, true); // Move cursor down
         }
@@ -310,8 +248,8 @@ public class InputBar extends ClickableWidget {
      */
     private CursorPosition mapMouseToCursor(double mouseX, double mouseY) {
         List<String> lines = inputState.getLines();
-        int pixelX = MathHelper.floor(mouseX) - x - cornerRadius;
-        int pixelY = MathHelper.floor(mouseY) - y - cornerRadius + (int) scrollOffset + 2;
+        int pixelX = MathHelper.floor(mouseX) - x - CORNER_RADIUS;
+        int pixelY = MathHelper.floor(mouseY) - y - CORNER_RADIUS + (int) scrollOffset + 2;
 
         int line = MathHelper.clamp(pixelY / LINE_HEIGHT, 0, lines.size() - 1);
         String lineText = lines.get(line);
@@ -388,8 +326,16 @@ public class InputBar extends ClickableWidget {
                     yield true;
                 }
                 case GLFW.GLFW_KEY_ENTER -> { // Enter
-                    textEditor.insertNewLine();
-                    yield true;
+                    if (Screen.hasShiftDown()) {
+                        textEditor.insertNewLine();
+                        yield true;
+                    } else {
+                        if (canSend()) {
+                            ChatManager.INSTANCE.getSession().send();
+                            yield true;
+                        }
+                        yield false;
+                    }
                 }
                 default -> {
                     if (Screen.isCopy(keyCode)) {
@@ -419,6 +365,24 @@ public class InputBar extends ClickableWidget {
         return false;
     }
 
+    @Override
+    public void setFocused(boolean focused) {
+        if (ChatManager.INSTANCE.hasActiveRequest()) return;
+        if (focused) disabled = false;
+        super.setFocused(focused);
+        textEditor.setFocused(focused);
+    }
+
+    public void setActivation(boolean focused) {
+        if (!focused) disabled = true;
+
+        if (!focused && ChatScreen.INSTANCE.getFocused() == this) {
+            ChatScreen.INSTANCE.setFocused(null);
+        } else if (focused) {
+            ChatScreen.INSTANCE.setFocused(this);
+        }
+    }
+
     /**
      * Calculates the total height of the text editor's lines based on the line count and line height.
      *
@@ -434,11 +398,7 @@ public class InputBar extends ClickableWidget {
      * @return The maximum scroll distance in pixels.
      */
     private int getMaxScroll() {
-        return (inputState.getLines().size() - maxVisibleLines) * LINE_HEIGHT;
-    }
-
-    @Override
-    protected void appendClickableNarrations(NarrationMessageBuilder builder) {
+        return (inputState.getLines().size() * LINE_HEIGHT) - MAX_HEIGHT;
     }
 
     public void setScrollPercentage(double scrollPercentage) {
@@ -447,9 +407,5 @@ public class InputBar extends ClickableWidget {
 
     public double getScrollPercentage() {
         return inputState.getScrollPercentage();
-    }
-
-    public int getCornerRadius() {
-        return cornerRadius;
     }
 }

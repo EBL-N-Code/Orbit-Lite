@@ -1,10 +1,8 @@
-package org.skyblockagent.gui.inputBar;
+package org.skyblockagent.gui;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import org.skyblockagent.managers.ChatManager;
-import org.skyblockagent.managers.Session;
 import org.skyblockagent.utils.render.RenderUtils;
 
 import java.util.function.Consumer;
@@ -41,12 +39,17 @@ public class Button {
     }
 
     protected void render(DrawContext context, int mouseX, int mouseY) {
-        RenderUtils.drawRoundedRect(context, x, y, width - 1, height, CORNER_RADIUS, FILL_COLOR, OUTLINE_THICKNESS, OUTLINE_COLOR);
-        context.drawCenteredTextWithShadow(textRenderer, label, x + (width / 2), y + (height / 2) - 4, 0xA0A0A0);
+        RenderUtils.drawRect(context, x, y, width - 1, height, CORNER_RADIUS, FILL_COLOR, OUTLINE_THICKNESS, OUTLINE_COLOR);
 
-        if (isHovered(mouseX, mouseY) || isToggled) {
-            RenderUtils.drawRoundedRect(context, x, y, width - 1, height, CORNER_RADIUS, 0x30FFFFFF);
+        if (isToggled) {
+            RenderUtils.drawRect(context, x, y, width - 1, height, CORNER_RADIUS, 0xFF1B1C1D, 1f, 0xFF213680);
         }
+
+        if (isHovered(mouseX, mouseY)) {
+            RenderUtils.drawRect(context, x, y, width - 1, height, CORNER_RADIUS, 0x30FFFFFF);
+        }
+
+        context.drawCenteredTextWithShadow(textRenderer, label, x + (width / 2), y + (height / 2) - 4, isToggled ? 0xFF4b71d1 : 0xA0A0A0);
     }
 
     public boolean isHovered(double mouseX, double mouseY) {

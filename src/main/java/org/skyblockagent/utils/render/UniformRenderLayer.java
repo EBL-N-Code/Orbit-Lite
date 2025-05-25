@@ -1,6 +1,7 @@
 package org.skyblockagent.utils.render;
 
 import org.joml.Vector2f;
+import org.joml.Vector4f;
 
 /**
  * An interface for render layers that support setting custom uniforms for shader programs.
@@ -16,8 +17,17 @@ public interface UniformRenderLayer {
      * @param value The {@link Vector2f} value to set.
      */
     default void setUniform(String name, Vector2f value) {
-        float[] array = new float[]{value.x(), value.y()};
-        setUniform(name, array);
+        setUniform(name, new float[]{value.x(), value.y()});
+    }
+
+    /**
+     * Sets a uniform with the specified name and 4D vector value.
+     *
+     * @param name  The name of the uniform.
+     * @param value The {@link Vector4f} value to set.
+     */
+    default void setUniform(String name, Vector4f value) {
+        setUniform(name, new float[]{value.x(), value.y(), value.z(), value.w()});
     }
 
     /**

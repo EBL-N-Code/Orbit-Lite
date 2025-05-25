@@ -1,4 +1,4 @@
-package org.skyblockagent.gui.inputBar;
+package org.skyblockagent.gui;
 
 import net.minecraft.client.gui.DrawContext;
 import org.skyblockagent.utils.render.RenderUtils;
@@ -28,9 +28,9 @@ public class Scrollbar {
     public void render(DrawContext context, int mouseX, int mouseY) {
         if (!isVisible) return;
 
-        RenderUtils.drawRoundedRect(context, x, y, BAR_WIDTH, height, CORNER_RADIUS, 0xFF4A5050);
+        RenderUtils.drawRect(context, x, y, BAR_WIDTH, height, CORNER_RADIUS, 0xFF4A5050);
         if (isHovered(mouseX, mouseY) || isDragging) {
-            RenderUtils.drawRoundedRect(context, x, y, BAR_WIDTH, height, CORNER_RADIUS, 0x20FFFFFF);
+            RenderUtils.drawRect(context, x, y, BAR_WIDTH, height, CORNER_RADIUS, 0x20FFFFFF);
         }
     }
 
@@ -52,6 +52,10 @@ public class Scrollbar {
 
     public void setDragging(boolean dragging) {
         isDragging = dragging;
+    }
+
+    public boolean isVisible() {
+        return isVisible;
     }
 
     public void setVisibility(boolean visible) {
