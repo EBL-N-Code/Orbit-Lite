@@ -1,5 +1,8 @@
 package org.skyblockagent.managers;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.util.Uuids;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.managers.message.AIMessage;
 import org.skyblockagent.managers.message.ChatMessage;
@@ -11,21 +14,32 @@ import java.util.UUID;
 
 public class Session {
     private UUID chatId;
+    private long createdAt;
+    private long lastModified;
+    private String title;
     private final InputState inputState = new InputState();
     private final List<ChatMessage> chatMessages = new ArrayList<>();
 
     public Session() {}
 
-    public Session(UUID chatId) {
+    public Session(UUID chatId, long createdAt, long lastModified, String title, List<ChatMessage> chatMessages) {
         this.chatId = chatId;
+        this.createdAt = createdAt;
+        this.lastModified = lastModified;
+        this.title = title;
+        this.chatMessages.addAll(chatMessages);
     }
 
     public void init() {
         chatId = UUID.randomUUID();
+        createdAt = System.currentTimeMillis();
+        lastModified = createdAt;
+        title = "Chat #0";
     }
 
     public void send() {
         if (chatId == null) init();
+        ChatManager chatManager = ChatManager.INSTANCE;
 
         UserMessage userMessage = new UserMessage(new ArrayList<>(inputState.getLines()));
         chatMessages.add(userMessage);
@@ -33,10 +47,13 @@ public class Session {
         inputState.reset();
         ChatScreen.INSTANCE.getInputBar().reset();
 
+        lastModified = System.currentTimeMillis();
+        SessionManager.saveSession(this);
+
         AIMessage aiMessage = new AIMessage(new ArrayList<>(List.of("")));
         chatMessages.add(aiMessage);
 
-        ChatManager.INSTANCE.sendRequest(aiMessage);
+        chatManager.sendRequest(aiMessage);
     }
 
     public InputState getInputState() {
@@ -49,5 +66,21 @@ public class Session {
 
     public List<ChatMessage> getChatMessages() {
         return chatMessages;
+    }
+
+    public UUID getId() {
+        return chatId;
+    }
+
+    public long getCreatedAt() {
+        return createdAt;
+    }
+
+    public long getLastModified() {
+        return lastModified;
+    }
+
+    public String getTitle() {
+        return title;
     }
 }
