@@ -52,9 +52,9 @@ public class InputBar extends Widget {
         ChatScreen chatScreen = ChatScreen.INSTANCE;
         lastSwitchFocusTime = Util.getMeasuringTimeMs();
 
-        int textHeight = Math.min(MAX_HEIGHT, getLinesHeight());
         int textWidth = width - 40;
-        textEditor.wrapLines(textWidth);
+        textEditor.wrapLines(textWidth - 2);
+        int textHeight = Math.min(MAX_HEIGHT, getLinesHeight());
 
         height = CORNER_RADIUS * 2 + textHeight;
         y = chatScreen.getBottom() - height - Y_OFFSET;

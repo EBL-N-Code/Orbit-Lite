@@ -5,7 +5,6 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Style;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
@@ -221,7 +220,7 @@ public class TextEditor {
     }
 
     protected void render(DrawContext context, float scrollOffset) {
-        context.enableScissor(x, y, x + width + 2, y + height - 1);
+        context.enableScissor(x, y, x + width + 8, y + height - 1);
 
         context.getMatrices().push();
         context.getMatrices().translate(0, -scrollOffset, 0);
@@ -414,21 +413,18 @@ public class TextEditor {
 
         int i = 0;
         for (String line : lines) {
-            List<StringVisitable> list = textRenderer.getTextHandler().wrapLines(line, maxWidth, Style.EMPTY);
-            if (list.isEmpty()) list.add(StringVisitable.plain(""));
-            boolean wrapped = list.size() > 1;
+            List<String> list = new ArrayList<>();
+            textRenderer.getTextHandler().wrapLines(line, maxWidth, Style.EMPTY, true, (_, start, end) -> list.add(line.substring(start, end)));
+            if (list.isEmpty()) list.add("");
 
-            if (wrapped && i == cursorPosition.line) {
+            if (list.size() > 1 && i == cursorPosition.line) {
                 String currentLine = lines.get(cursorPosition.line);
                 String after = currentLine.substring(Math.min(cursorPosition.column, currentLine.length()));
                 cursorPosition.line += list.size() - 1;
-                cursorPosition.column = list.getLast().getString().length() - after.length();
+                cursorPosition.column = list.getLast().length() - after.length();
             }
 
-            for (StringVisitable stringVisitable : list) {
-                wrappedLines.add(stringVisitable.getString());
-            }
-
+            wrappedLines.addAll(list);
             i++;
         }
 
