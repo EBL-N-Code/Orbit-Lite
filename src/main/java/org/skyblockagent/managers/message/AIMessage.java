@@ -1,8 +1,5 @@
 package org.skyblockagent.managers.message;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.MapCodec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.gui.DrawContext;
 import org.skyblockagent.gui.ChatDisplay;
 import org.skyblockagent.gui.ChatScreen;
@@ -15,8 +12,8 @@ public class AIMessage extends ChatMessage {
         super(content);
     }
 
-    public AIMessage(List<String> rawContent, long timestamp) {
-        super(rawContent, timestamp);
+    public AIMessage(String content, long timestamp) {
+        super(content, timestamp);
     }
 
     @Override
@@ -33,12 +30,8 @@ public class AIMessage extends ChatMessage {
         }
     }
 
-    public void onFinish() {
-        this.content = String.join("", rawContent);
-    }
-
     public void add(String msg) {
-        rawContent.set(rawContent.size() - 1, rawContent.getLast() + msg);
+        content.set(content.size() - 1, content.getLast() + msg);
 
         int oldHeight = height;
         update();

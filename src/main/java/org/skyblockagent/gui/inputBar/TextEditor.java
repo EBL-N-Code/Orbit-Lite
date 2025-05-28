@@ -8,7 +8,7 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Style;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
-import org.skyblockagent.managers.InputState;
+import org.skyblockagent.managers.session.InputState;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

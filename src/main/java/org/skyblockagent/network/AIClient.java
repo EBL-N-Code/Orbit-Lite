@@ -1,4 +1,4 @@
-package org.skyblockagent.ai;
+package org.skyblockagent.network;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -73,11 +73,13 @@ public class AIClient {
         try (Response response = client.newCall(httpRequest).execute()) {
             if (!response.isSuccessful()) {
                 LOGGER.error("API request failed with code: {}", response.code());
+                request.onError("API request failed with code: " + response.code());
                 throw new RuntimeException("API request failed with code: " + response.code());
             }
 
             if (response.body() == null) {
-                LOGGER.error("Response body is null");
+                LOGGER.error("No response body");
+                request.onError("No response body");
                 throw new IOException("No response body");
             }
 
@@ -121,6 +123,7 @@ public class AIClient {
             }
         } catch (JsonParseException e) {
             LOGGER.error("Error parsing chunk: {}", e.getMessage());
+            request.onError(e.getMessage());
         }
     }
 }

@@ -1,9 +1,7 @@
-package org.skyblockagent.managers;
+package org.skyblockagent.managers.session;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.util.Uuids;
 import org.skyblockagent.gui.ChatScreen;
+import org.skyblockagent.managers.ChatManager;
 import org.skyblockagent.managers.message.AIMessage;
 import org.skyblockagent.managers.message.ChatMessage;
 import org.skyblockagent.managers.message.UserMessage;
@@ -46,9 +44,7 @@ public class Session {
 
         inputState.reset();
         ChatScreen.INSTANCE.getInputBar().reset();
-
         lastModified = System.currentTimeMillis();
-        SessionManager.saveSession(this);
 
         AIMessage aiMessage = new AIMessage(new ArrayList<>(List.of("")));
         chatMessages.add(aiMessage);

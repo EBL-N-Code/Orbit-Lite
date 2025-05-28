@@ -11,7 +11,7 @@ import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.Scrollbar;
 import org.skyblockagent.gui.Widget;
 import org.skyblockagent.managers.ChatManager;
-import org.skyblockagent.managers.InputState;
+import org.skyblockagent.managers.session.InputState;
 import org.skyblockagent.utils.render.RenderUtils;
 
 import java.util.List;
@@ -374,6 +374,7 @@ public class InputBar extends Widget {
     }
 
     public void setActivation(boolean focused) {
+        if (ChatScreen.INSTANCE == null) return;
         if (!focused) disabled = true;
 
         if (!focused && ChatScreen.INSTANCE.getFocused() == this) {

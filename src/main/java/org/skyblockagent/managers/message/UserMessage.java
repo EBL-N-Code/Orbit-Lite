@@ -1,8 +1,5 @@
 package org.skyblockagent.managers.message;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.MapCodec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.gui.DrawContext;
 import org.skyblockagent.utils.render.RenderUtils;
 
@@ -12,11 +9,10 @@ public class UserMessage extends ChatMessage {
 
     public UserMessage(List<String> content) {
         super(content);
-        this.content = String.join("", rawContent);
     }
 
-    public UserMessage(List<String> rawContent, long timestamp) {
-        super(rawContent, timestamp);
+    public UserMessage(String content, long timestamp) {
+        super(content, timestamp);
     }
 
     @Override

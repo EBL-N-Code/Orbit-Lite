@@ -1,8 +1,9 @@
 package org.skyblockagent.managers;
 
-import org.skyblockagent.ai.AIRequest;
+import org.skyblockagent.network.AIRequest;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.managers.message.AIMessage;
+import org.skyblockagent.managers.session.Session;
 
 public class ChatManager {
     public final static ChatManager INSTANCE = new ChatManager();

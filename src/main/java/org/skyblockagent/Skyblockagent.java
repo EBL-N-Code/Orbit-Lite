@@ -3,11 +3,13 @@ package org.skyblockagent;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.gui.screen.Screen;
 import org.jetbrains.annotations.Nullable;
-import org.skyblockagent.ai.AIClient;
+import org.skyblockagent.network.AIClient;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.managers.ChatManager;
+import org.skyblockagent.network.StreamingProcessor;
 import org.skyblockagent.utils.scheduler.Scheduler;
 
 public class Skyblockagent implements ClientModInitializer {
@@ -17,6 +19,8 @@ public class Skyblockagent implements ClientModInitializer {
     public void onInitializeClient() {
         AIClient.initClient();
         registerCommand();
+
+        ClientTickEvents.END_CLIENT_TICK.register(_ -> StreamingProcessor.tick());
     }
 
     public void registerCommand() {

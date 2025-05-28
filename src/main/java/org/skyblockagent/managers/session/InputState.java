@@ -1,4 +1,4 @@
-package org.skyblockagent.managers;
+package org.skyblockagent.managers.session;
 
 import org.skyblockagent.gui.inputBar.CursorPosition;
 
