@@ -25,7 +25,7 @@ public class AIMessage extends ChatMessage {
     public void render(DrawContext context) {
         int yOffset = 0;
         for (String line : wrappedContent) {
-            context.drawText(textRenderer, line, x, y + yOffset, 0xFFFFFFFF, true);
+            context.drawText(textRenderer, line, x, y + yOffset, 0xFFEEEEEE, false);
             yOffset += 10;
         }
     }

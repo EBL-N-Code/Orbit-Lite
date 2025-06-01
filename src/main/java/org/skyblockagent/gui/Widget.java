@@ -1,18 +1,22 @@
 package org.skyblockagent.gui;
 
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
+import org.skyblockagent.Profiler;
 
 public abstract class Widget implements Drawable, Element, Selectable {
+    protected final TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
     protected int x, y, width, height;
     private boolean hovered;
     private boolean focused;
+    private boolean switchedFocus = false;
 
-    public Widget() {
-    }
+    public Widget() {}
 
     public Widget(int x, int y, int width, int height) {
         init(x, y, width, height);
@@ -27,7 +31,6 @@ public abstract class Widget implements Drawable, Element, Selectable {
     }
 
     protected abstract void init();
-
     protected abstract void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks);
 
     @Override
@@ -55,8 +58,7 @@ public abstract class Widget implements Drawable, Element, Selectable {
     }
 
     @Override
-    public void appendNarrations(NarrationMessageBuilder builder) {
-    }
+    public void appendNarrations(NarrationMessageBuilder builder) {}
 
     public int getX() {
         return x;
@@ -86,5 +88,15 @@ public abstract class Widget implements Drawable, Element, Selectable {
     @Override
     public void setFocused(boolean focused) {
         this.focused = focused;
+    }
+
+    public void setSwitchedFocus() {
+        this.switchedFocus = true;
+    }
+
+    public boolean switchedFocus() {
+        boolean oldValue = switchedFocus;
+        switchedFocus = false;
+        return oldValue;
     }
 }

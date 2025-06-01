@@ -31,7 +31,7 @@ public class UserMessage extends ChatMessage {
 
         int yOffset = 0;
         for (String line : wrappedContent) {
-            context.drawText(textRenderer, line, x + 5, y + yOffset + 6, 0xFFFFFFFF, true);
+            context.drawText(textRenderer, line, x + 5, y + yOffset + 6, 0xFFEEEEEE, false);
             yOffset += 10;
         }
     }

@@ -32,7 +32,7 @@ public class Session {
         chatId = UUID.randomUUID();
         createdAt = System.currentTimeMillis();
         lastModified = createdAt;
-        title = "Chat #0";
+        title = "Chat #" + ChatLoader.getChats().size();
     }
 
     public void send() {
@@ -54,10 +54,6 @@ public class Session {
 
     public InputState getInputState() {
         return inputState;
-    }
-
-    public boolean isEmpty() {
-        return chatMessages.isEmpty();
     }
 
     public List<ChatMessage> getChatMessages() {

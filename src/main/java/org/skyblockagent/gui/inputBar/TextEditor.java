@@ -248,7 +248,7 @@ public class TextEditor {
 
                 context.getMatrices().push();
                 context.getMatrices().translate(0f, 0f, 5f);
-                context.drawText(textRenderer, line, x, lineY, 0xFFFFFF, true);
+                context.drawText(textRenderer, line, x, lineY, 0xFFEEEEEE, true);
                 context.getMatrices().pop();
 
                 // Draw selection highlight if needed
