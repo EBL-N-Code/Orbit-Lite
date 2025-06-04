@@ -1,9 +1,4 @@
-package org.skyblockagent.managers.session;
-
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import org.skyblockagent.utils.render.RenderUtils;
+package org.skyblockagent.chat.session;
 
 import java.util.UUID;
 

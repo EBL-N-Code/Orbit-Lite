@@ -2,86 +2,63 @@ package org.skyblockagent.gui;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.util.math.MathHelper;
-import org.joml.Vector4f;
-import org.skyblockagent.managers.ChatManager;
-import org.skyblockagent.managers.message.ChatMessage;
+import org.skyblockagent.gui.components.Scrollbar;
+import org.skyblockagent.gui.components.Widget;
+import org.skyblockagent.chat.ChatManager;
+import org.skyblockagent.chat.message.ChatMessage;
 import org.skyblockagent.utils.render.RenderUtils;
 
 import java.util.List;
 
 public class ChatDisplay extends Widget {
-    private final Scrollbar scrollbar = new Scrollbar();
-    private int chatX, chatWidth, chatHeight;
+    private static final String WELCOME_TEXT = "Welcome back, " + MinecraftClient.getInstance().getGameProfile().getName();
+    private final Scrollbar scrollbar = new Scrollbar(1f, 0f);
+    private int fullWidth, fullHeight;
     private int maxUserMsgWidth;
-    private float scrollOffset = 0f;
-    private double scrollPercentage = 1f;
     private int yOffset;
 
     @Override
     protected void init() {
+        ChatScreen chatScreen = ChatScreen.INSTANCE;
+        this.fullWidth = chatScreen.getChatWidth();
+        this.fullHeight = chatScreen.getChatHeight();
+        this.maxUserMsgWidth = (width * 2) / 3;
         this.yOffset = 10;
-        this.maxUserMsgWidth = (chatWidth * 2) / 3;
 
         for (ChatMessage chatMessage : ChatManager.INSTANCE.getSession().getChatMessages()) {
-            chatMessage.init(chatX, y + yOffset, chatWidth, maxUserMsgWidth);
-            addSpace(chatMessage.getHeight() + 5);
+            chatMessage.init(x, y + yOffset, width, maxUserMsgWidth);
+            yOffset += chatMessage.getHeight() + 5;
         }
-        updateScrollBar();
-    }
-
-    protected void init(int x, int y, int width, int height, int chatX, int chatWidth) {
-        this.chatX = chatX;
-        this.chatWidth = chatWidth;
-        this.chatHeight = height;
-        init(x, y, width, height);
+        scrollbar.init(y, height, chatScreen.getRight(), yOffset);
     }
 
     public void onMessage(ChatMessage chatMessage) {
-        chatMessage.init(chatX, y + yOffset, chatWidth, maxUserMsgWidth);
+        chatMessage.init(x, y + yOffset, width, maxUserMsgWidth);
 
-        scrollPercentage = 1f;
+        scrollbar.reset();
         addSpace(chatMessage.getHeight() + 5);
-        updateScrollBar();
     }
 
     public void addSpace(int space) {
         yOffset += space;
+        scrollbar.updateOffset(yOffset, height);
     }
 
-    public void updateHeight(int height) {
-        this.chatHeight = height;
-        updateScrollBar();
-    }
-
-    public void updateScrollBar() {
-        int minY = y + 5;
-        int maxY = y + chatHeight - 5;
-
-        scrollbar.init(minY, maxY, ChatScreen.INSTANCE.getRight());
-
-        boolean isScrollable = yOffset > chatHeight;
-        scrollbar.setVisibility(isScrollable);
-
-        if (isScrollable) {
-            float maxScroll = yOffset - chatHeight;
-            scrollPercentage = MathHelper.clamp(scrollPercentage, 0.0f, 1.0f);
-            scrollOffset = MathHelper.clamp((float) scrollPercentage * maxScroll, 0.0f, maxScroll);
-            scrollbar.update(chatHeight, yOffset, scrollPercentage);
-        }
+    public void updateHeight(int newHeight) {
+        height = newHeight;
+        scrollbar.init(y, height, ChatScreen.INSTANCE.getRight(), yOffset);
     }
 
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-        RenderUtils.drawRect(context, x-1, y, width, height, new Vector4f(0f, 8f, 0f, 0f), 0xFF141519);
-
         List<ChatMessage> chatMessages = ChatManager.INSTANCE.getSession().getChatMessages();
         if (chatMessages.isEmpty()) {
-            renderGreatingText(context, x + (width / 2), y + (height / 3));
+            renderGreatingText(context);
             return;
         }
 
-        context.enableScissor(chatX, y, chatX + chatWidth, y + chatHeight + 8);
+        float scrollOffset = scrollbar.getScrollOffset();
+        context.enableScissor(x, y, x + width, y + height + 8);
         context.getMatrices().push();
         context.getMatrices().translate(0, -scrollOffset, 0);
 
@@ -95,7 +72,7 @@ public class ChatDisplay extends Widget {
                 break;
             }
 
-            if (messageTopY < y + scrollOffset + chatHeight) {
+            if (messageTopY < y + scrollOffset + height) {
                 chatMessage.render(context);
             }
         }
@@ -106,63 +83,40 @@ public class ChatDisplay extends Widget {
         scrollbar.render(context, mouseX, mouseY);
     }
 
-    public void renderGreatingText(DrawContext context, int x, int y) {
+    public void renderGreatingText(DrawContext context) {
         context.getMatrices().push();
-        context.getMatrices().translate(x, y, 0f);
+        context.getMatrices().translate(x + ((float) width / 2), y + ((float) height / 3), 0f);
         context.getMatrices().scale(1.5f, 1.5f, 1f);
-        context.drawCenteredTextWithShadow(textRenderer, "Good Evening, " + MinecraftClient.getInstance().getGameProfile().getName(), 0, 0, 0xFFFFFFFF);
+        RenderUtils.drawCenteredText(context, WELCOME_TEXT, 0, 0);
         context.getMatrices().pop();
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (scrollbar.isHovered(mouseX, mouseY)) {
-            scrollbar.setDragging(true);
-            return true;
-        }
-
-        return false;
+        return scrollbar.mouseClicked(mouseX, mouseY);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        if (scrollbar.isVisible()) {
-            float scrollDelta = (float) verticalAmount * 55f / (yOffset - chatHeight);
-            scrollPercentage = MathHelper.clamp(scrollPercentage - scrollDelta, 0.0f, 1.0f);
-            updateScrollBar();
-            return true;
-        }
-        return false;
+        return scrollbar.mouseScrolled(verticalAmount, yOffset, height);
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (scrollbar.isDragging()) {
-            int minY = scrollbar.getMinY();
-            int maxY = scrollbar.getMaxY();
-            int barHeight = scrollbar.getHeight();
-
-            double newBarY = MathHelper.clamp(scrollbar.getY() + deltaY, minY, maxY - barHeight);
-            scrollPercentage = (newBarY - minY) / ((maxY - minY) - barHeight);
-            scrollOffset = (float) (scrollPercentage * (yOffset - chatHeight));
-
-            scrollbar.update(chatHeight, yOffset, scrollPercentage);
-            return true;
-        }
-        return false;
+        return scrollbar.mouseDragged(deltaY, yOffset, height);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (scrollbar.isDragging()) {
-            scrollbar.setDragging(false);
-            return true;
-        }
-        return false;
+        return scrollbar.mouseReleased();
     }
 
-    public void resetPosition() {
-        scrollOffset = 0f;
-        scrollPercentage = 1f;
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return mouseX >= x - ((double) fullWidth / 2) && mouseY >= y && mouseX < x + width + ((double) fullWidth / 2) && mouseY < y + fullHeight;
+    }
+
+    public Scrollbar getScrollbar() {
+        return scrollbar;
     }
 }

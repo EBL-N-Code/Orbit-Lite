@@ -1,19 +1,29 @@
 package org.skyblockagent.utils.render;
 
 
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
+import org.skyblockagent.Skyblockagent;
 import org.skyblockagent.mixins.accessors.DrawContextAccessor;
 
 /**
- * Utility class for rendering 2D shapes in Minecraft's GUI, including ellipses and rectangles.
+ * Utility class for rendering Text and 2D shapes in Minecraft's GUI.
  */
 public class RenderUtils {
+    private final static TextRenderer TEXT_RENDERER = MinecraftClient.getInstance().textRenderer;
+    private final static Identifier FONT = Identifier.of(Skyblockagent.NAMESPACE, "custom_font");
+    private static final Style FONT_STYLE = Style.EMPTY.withFont(FONT);
+
     public static void drawEllipse(DrawContext context, float x, float y, float width, float height, int fillColor, float outlineThickness, int outlineColor) {
         VertexConsumerProvider.Immediate consumers = ((DrawContextAccessor) context).getVertexConsumers();
         RenderLayer renderLayer = RenderLayers.getEllipseLayer(fillColor, outlineColor, (float) ((outlineThickness * 1.5) / Math.min(width, height)));
@@ -65,5 +75,25 @@ public class RenderUtils {
         vertexConsumer.vertex(transform, x + width, y + height, 0).texture(1, 0);
         vertexConsumer.vertex(transform, x + width, y, 0).texture(1, 1);
         vertexConsumer.vertex(transform, x, y, 0).texture(0, 1);
+    }
+
+    public static void drawText(DrawContext context, String text, int x, int y, int color, boolean shadow) {
+        context.drawText(TEXT_RENDERER, Text.literal(text).setStyle(FONT_STYLE), x, y, color, shadow);
+    }
+
+    public static void drawText(DrawContext context, String text, int x, int y, int color) {
+        drawText(context, text, x, y, color, false);
+    }
+
+    public static void drawText(DrawContext context, String text, int x, int y, boolean shadow) {
+        drawText(context, text, x, y, 0xFFE0E0E0, shadow);
+    }
+
+    public static void drawText(DrawContext context, String text, int x, int y) {
+        drawText(context, text, x, y, 0xFFE0E0E0, false);
+    }
+
+    public static void drawCenteredText(DrawContext context, String text, int centerX, int y) {
+        drawText(context, text, centerX - TEXT_RENDERER.getWidth(text) / 2, y, 0xFFE0E0E0, false);
     }
 }

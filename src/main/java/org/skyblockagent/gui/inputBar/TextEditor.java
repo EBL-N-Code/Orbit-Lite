@@ -1,42 +1,40 @@
 package org.skyblockagent.gui.inputBar;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.font.TextHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Style;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
-import org.skyblockagent.managers.session.InputState;
+import org.skyblockagent.gui.ChatScreen;
+import org.skyblockagent.gui.components.Widget;
+import org.skyblockagent.chat.ChatManager;
+import org.skyblockagent.chat.session.InputState;
+import org.skyblockagent.utils.render.RenderUtils;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
-public class TextEditor {
+public class TextEditor extends Widget {
     private static final int UNDO_STACK_LIMIT = 25;
     private static final long SNAPSHOT_INTERVAL_MS = 500;
-    private final TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
-    private final InputBar inputBar;
-    private final InputState inputState;
     private final Deque<EditorState> undoStack = new ArrayDeque<>();
     private final Deque<EditorState> redoStack = new ArrayDeque<>();
     private long lastSnapshotTime = 0;
-    private int x, y, width, height;
-    private boolean focused = false;
+    private InputBar inputBar;
+    private InputState inputState;
 
-    protected TextEditor(InputBar inputBar) {
-        this.inputBar = inputBar;
-        this.inputState = inputBar.inputState;
+    public TextEditor() {
+        init();
     }
 
-    protected void init(int x, int y, int width, int height) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
+    @Override
+    protected void init() {
+        this.inputBar = ChatScreen.INSTANCE.getInputBar();
+        this.inputState = ChatManager.INSTANCE.getSession().getInputState();
     }
 
     /**
@@ -102,7 +100,7 @@ public class TextEditor {
             }
         }
 
-        inputBar.update(true);
+        inputBar.update();
     }
 
     private void backspace() {
@@ -219,11 +217,12 @@ public class TextEditor {
         setCursor(new CursorPosition(newLineIndex, 0), false);
     }
 
-    protected void render(DrawContext context, float scrollOffset) {
+    @Override
+    protected void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         context.enableScissor(x, y, x + width + 8, y + height - 1);
 
         context.getMatrices().push();
-        context.getMatrices().translate(0, -scrollOffset, 0);
+        context.getMatrices().translate(0, -inputBar.getScrollbar().getScrollOffset(), 0);
 
         renderText(context, x, y);
         renderCursor(context, x, y);
@@ -234,7 +233,7 @@ public class TextEditor {
 
     protected void renderText(DrawContext context, int x, int y) {
         if (isEmpty()) {
-            context.drawText(textRenderer, "Ask anything", x, y, 0xA0A0A0, true);
+            RenderUtils.drawText(context, "Ask anything", x, y, 0xA0A0A0, true);
         } else {
             CursorPosition selectionStart = getSelectionStart();
             CursorPosition selectionEnd = getSelectionEnd();
@@ -248,13 +247,14 @@ public class TextEditor {
 
                 context.getMatrices().push();
                 context.getMatrices().translate(0f, 0f, 5f);
-                context.drawText(textRenderer, line, x, lineY, 0xFFEEEEEE, true);
+                RenderUtils.drawText(context, line, x, lineY, true);
                 context.getMatrices().pop();
 
                 // Draw selection highlight if needed
                 if (hasSelection() && lineIndex >= selStart.line && lineIndex <= selEnd.line) {
                     int startX = lineIndex == selStart.line ? x + textRenderer.getWidth(line.substring(0, selStart.column)) : x;
                     int endX = lineIndex == selEnd.line ? x + textRenderer.getWidth(line.substring(0, selEnd.column)) : x + textRenderer.getWidth(line);
+                    if (line.isEmpty()) endX += 4;
 
                     context.fill(startX, lineY - 1, endX, lineY + 9, 0xFF3390FF);
                 }
@@ -263,7 +263,7 @@ public class TextEditor {
     }
 
     protected void renderCursor(DrawContext context, int x, int y) {
-        if (focused && !hasSelection()) {
+        if (isFocused() && !hasSelection()) {
             boolean blink = (Util.getMeasuringTimeMs() - inputBar.lastSwitchFocusTime) / 500L % 2L == 0L;
             if (blink) {
                 List<String> lines = getLines();
@@ -374,7 +374,7 @@ public class TextEditor {
 
         if (!shiftKeyPressed) setSelectionStart(pos);
 
-        inputBar.update(true);
+        inputBar.update();
     }
 
     private void selectWordAt(CursorPosition pos) {
@@ -410,11 +410,12 @@ public class TextEditor {
 
         List<String> wrappedLines = new ArrayList<>();
         CursorPosition cursorPosition = getCursorPosition();
+        TextHandler textHandler = textRenderer.getTextHandler();
 
         int i = 0;
         for (String line : lines) {
             List<String> list = new ArrayList<>();
-            textRenderer.getTextHandler().wrapLines(line, maxWidth, Style.EMPTY, true, (_, start, end) -> list.add(line.substring(start, end)));
+            textHandler.wrapLines(line, maxWidth, Style.EMPTY, true, (_, start, end) -> list.add(line.substring(start, end)));
             if (list.isEmpty()) list.add("");
 
             if (list.size() > 1 && i == cursorPosition.line) {
@@ -486,7 +487,7 @@ public class TextEditor {
         setCursorPosition(state.cursor());
         setSelectionStart(state.selectionStart());
         setSelectionEnd(state.selectionEnd());
-        inputBar.update(true);
+        inputBar.update();
     }
 
     protected void reset() {
@@ -511,26 +512,6 @@ public class TextEditor {
     protected void setCursorToLineEnd(boolean shiftDown) {
         CursorPosition cursorPosition = getCursorPosition();
         setCursor(new CursorPosition(cursorPosition.line, getLines().get(cursorPosition.line).length()), shiftDown);
-    }
-
-    public int getX() {
-        return x;
-    }
-
-    protected int getY() {
-        return y;
-    }
-
-    protected boolean isFocused() {
-        return focused;
-    }
-
-    protected void setFocused(boolean focused) {
-        this.focused = focused;
-    }
-
-    protected int getHeight() {
-        return height;
     }
 
     private List<String> getLines() {

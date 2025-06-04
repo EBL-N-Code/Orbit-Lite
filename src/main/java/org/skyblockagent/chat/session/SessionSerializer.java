@@ -1,11 +1,11 @@
-package org.skyblockagent.managers.session;
+package org.skyblockagent.chat.session;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import org.skyblockagent.managers.message.AIMessage;
-import org.skyblockagent.managers.message.ChatMessage;
-import org.skyblockagent.managers.message.MessageSender;
-import org.skyblockagent.managers.message.UserMessage;
+import org.skyblockagent.chat.message.AIMessage;
+import org.skyblockagent.chat.message.ChatMessage;
+import org.skyblockagent.chat.message.MessageSender;
+import org.skyblockagent.chat.message.UserMessage;
 
 import java.lang.reflect.Type;
 import java.util.List;

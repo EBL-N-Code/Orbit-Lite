@@ -1,3 +1,3 @@
-package org.skyblockagent.managers.session;
+package org.skyblockagent.chat.session;
 
 public record Line(boolean isGroupTitle, DateGroup group, Chat chat) {}

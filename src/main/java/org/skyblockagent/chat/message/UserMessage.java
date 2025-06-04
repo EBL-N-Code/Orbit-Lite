@@ -1,4 +1,4 @@
-package org.skyblockagent.managers.message;
+package org.skyblockagent.chat.message;
 
 import net.minecraft.client.gui.DrawContext;
 import org.skyblockagent.utils.render.RenderUtils;
@@ -31,7 +31,7 @@ public class UserMessage extends ChatMessage {
 
         int yOffset = 0;
         for (String line : wrappedContent) {
-            context.drawText(textRenderer, line, x + 5, y + yOffset + 6, 0xFFEEEEEE, false);
+            RenderUtils.drawText(context, line, x + 5, y + yOffset + 6);
             yOffset += 10;
         }
     }

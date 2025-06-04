@@ -1,17 +1,16 @@
-package org.skyblockagent.managers.session;
+package org.skyblockagent.chat.session;
 
 import com.google.gson.*;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import org.skyblockagent.Skyblockagent;
-import org.skyblockagent.managers.ChatManager;
+import org.skyblockagent.chat.ChatManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -21,14 +20,12 @@ public class SessionLoader {
     private static final Gson GSON = SessionSerializer.getGson();
 
     public static void saveSession() {
-        MinecraftClient.getInstance().executeAsync(_ -> {
-            CompletableFuture.runAsync(() -> {
-                createDir();
-                Session session = ChatManager.INSTANCE.getSession();
-                saveSessionToFile(session);
-                ChatLoader.updateIndexFor(session);
-            });
-        });
+        MinecraftClient.getInstance().executeAsync(_ -> CompletableFuture.runAsync(() -> {
+            createDir();
+            Session session = ChatManager.INSTANCE.getSession();
+            saveSessionToFile(session);
+            ChatLoader.updateIndexFor(session);
+        }));
     }
 
     private static void createDir() {

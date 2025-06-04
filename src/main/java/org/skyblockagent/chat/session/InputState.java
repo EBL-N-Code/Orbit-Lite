@@ -1,4 +1,4 @@
-package org.skyblockagent.managers.session;
+package org.skyblockagent.chat.session;
 
 import org.skyblockagent.gui.inputBar.CursorPosition;
 
@@ -47,10 +47,6 @@ public class InputState {
 
     public void setSelectionEnd(CursorPosition selectionEnd) {
         this.selectionEnd = selectionEnd;
-    }
-
-    public double getScrollPercentage() {
-        return scrollPercentage;
     }
 
     public void setScrollPercentage(double scrollPercentage) {

@@ -6,8 +6,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import net.minecraft.client.MinecraftClient;
 import okhttp3.*;
-import org.skyblockagent.managers.message.ChatMessage;
-import org.skyblockagent.managers.message.MessageSender;
+import org.skyblockagent.chat.message.ChatMessage;
+import org.skyblockagent.chat.message.MessageSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

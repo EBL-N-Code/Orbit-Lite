@@ -1,7 +1,7 @@
 package org.skyblockagent.network;
 
-import org.skyblockagent.managers.message.AIMessage;
-import org.skyblockagent.managers.message.ChatMessage;
+import org.skyblockagent.chat.message.AIMessage;
+import org.skyblockagent.chat.message.ChatMessage;
 
 import java.util.List;
 

@@ -1,10 +1,10 @@
-package org.skyblockagent.managers.session;
+package org.skyblockagent.chat.session;
 
 import org.skyblockagent.gui.ChatScreen;
-import org.skyblockagent.managers.ChatManager;
-import org.skyblockagent.managers.message.AIMessage;
-import org.skyblockagent.managers.message.ChatMessage;
-import org.skyblockagent.managers.message.UserMessage;
+import org.skyblockagent.chat.ChatManager;
+import org.skyblockagent.chat.message.AIMessage;
+import org.skyblockagent.chat.message.ChatMessage;
+import org.skyblockagent.chat.message.UserMessage;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -4,15 +4,12 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.HudLayerRegistrationCallback;
-import net.fabricmc.fabric.api.client.rendering.v1.IdentifiedLayer;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
-import org.skyblockagent.managers.session.ChatLoader;
+import org.skyblockagent.chat.session.ChatLoader;
 import org.skyblockagent.network.AIClient;
 import org.skyblockagent.gui.ChatScreen;
-import org.skyblockagent.managers.ChatManager;
+import org.skyblockagent.chat.ChatManager;
 import org.skyblockagent.network.StreamingProcessor;
 import org.skyblockagent.utils.scheduler.Scheduler;
 

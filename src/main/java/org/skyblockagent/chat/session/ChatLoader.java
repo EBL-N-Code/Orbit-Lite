@@ -1,4 +1,4 @@
-package org.skyblockagent.managers.session;
+package org.skyblockagent.chat.session;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -6,7 +6,6 @@ import com.google.gson.GsonBuilder;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.util.Pair;
 import org.skyblockagent.Skyblockagent;
-import org.skyblockagent.gui.ChatList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,10 +15,6 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.temporal.WeekFields;
 import java.util.*;
 
 public class ChatLoader {
@@ -27,7 +22,6 @@ public class ChatLoader {
     private static final Path INDEX_PATH = FabricLoader.getInstance().getConfigDir().resolve(Skyblockagent.NAMESPACE, "chat_index.json");
     private static final Type TYPE = new TypeToken<List<Chat>>() {}.getType();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-
     private static final List<Chat> CHATS = new ArrayList<>();
     private static final List<Line> LINES = new ArrayList<>();
     private static int maxOffset;

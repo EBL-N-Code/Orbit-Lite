@@ -1,4 +1,4 @@
-package org.skyblockagent.managers.session;
+package org.skyblockagent.chat.session;
 
 import net.minecraft.util.Pair;
 

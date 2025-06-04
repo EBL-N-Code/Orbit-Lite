@@ -1,9 +1,9 @@
-package org.skyblockagent.managers.message;
+package org.skyblockagent.chat.message;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextHandler;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Style;
 import org.skyblockagent.gui.ChatScreen;
 
@@ -47,10 +47,11 @@ public abstract class ChatMessage {
     public void wrapLines(int maxWidth) {
         wrappedContent.clear();
 
+        TextHandler textHandler = textRenderer.getTextHandler();
         for (String line : content) {
-            for (StringVisitable str : textRenderer.getTextHandler().wrapLines(line, maxWidth, Style.EMPTY)) {
-                wrappedContent.add(str.getString());
-            }
+            List<String> list = new ArrayList<>();
+            textHandler.wrapLines(line, maxWidth, Style.EMPTY, true, (_, start, end) -> list.add(line.substring(start, end)));
+            wrappedContent.addAll(list);
         }
     }
 

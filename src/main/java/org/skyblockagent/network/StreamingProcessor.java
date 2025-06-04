@@ -1,9 +1,8 @@
 package org.skyblockagent.network;
 
-import net.minecraft.client.MinecraftClient;
 import org.skyblockagent.gui.ChatScreen;
-import org.skyblockagent.managers.message.AIMessage;
-import org.skyblockagent.managers.session.SessionLoader;
+import org.skyblockagent.chat.message.AIMessage;
+import org.skyblockagent.chat.session.SessionLoader;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -30,7 +29,9 @@ public class StreamingProcessor {
         while (!eventQueue.isEmpty()) {
             StreamEvent event = eventQueue.poll();
             if (event instanceof StreamEvent.Chunk(String text)) {
-                if (currentMessage != null) currentMessage.add(text);
+                if (currentMessage != null) {
+                    currentMessage.add(text);
+                }
             } else if (event instanceof StreamEvent.Finish) {
                 if (finished) continue;
                 finished = true;

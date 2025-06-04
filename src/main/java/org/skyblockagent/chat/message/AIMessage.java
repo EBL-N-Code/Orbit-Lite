@@ -1,8 +1,9 @@
-package org.skyblockagent.managers.message;
+package org.skyblockagent.chat.message;
 
 import net.minecraft.client.gui.DrawContext;
 import org.skyblockagent.gui.ChatDisplay;
 import org.skyblockagent.gui.ChatScreen;
+import org.skyblockagent.utils.render.RenderUtils;
 
 import java.util.List;
 
@@ -25,7 +26,7 @@ public class AIMessage extends ChatMessage {
     public void render(DrawContext context) {
         int yOffset = 0;
         for (String line : wrappedContent) {
-            context.drawText(textRenderer, line, x, y + yOffset, 0xFFEEEEEE, false);
+            RenderUtils.drawText(context, line, x, y + yOffset);
             yOffset += 10;
         }
     }
@@ -41,7 +42,6 @@ public class AIMessage extends ChatMessage {
             int diff = height - oldHeight;
             if (diff > 0) {
                 chatDisplay.addSpace(diff);
-                chatDisplay.updateScrollBar();
             }
         }
     }

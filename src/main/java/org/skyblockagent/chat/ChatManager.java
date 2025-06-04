@@ -1,14 +1,12 @@
-package org.skyblockagent.managers;
+package org.skyblockagent.chat;
 
-import org.skyblockagent.managers.session.SessionLoader;
+import org.skyblockagent.chat.session.SessionLoader;
 import org.skyblockagent.network.AIRequest;
 import org.skyblockagent.gui.ChatScreen;
-import org.skyblockagent.managers.message.AIMessage;
-import org.skyblockagent.managers.session.Session;
+import org.skyblockagent.chat.message.AIMessage;
+import org.skyblockagent.chat.session.Session;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.UUID;
 
 public class ChatManager {

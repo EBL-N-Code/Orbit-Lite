@@ -1,4 +1,4 @@
-package org.skyblockagent.gui;
+package org.skyblockagent.gui.components;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -7,7 +7,6 @@ import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import org.skyblockagent.Profiler;
 
 public abstract class Widget implements Drawable, Element, Selectable {
     protected final TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
