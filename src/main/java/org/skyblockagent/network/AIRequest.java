@@ -6,43 +6,31 @@ import org.skyblockagent.chat.message.ChatMessage;
 import java.util.List;
 
 public class AIRequest {
-    private final long timestamp = System.currentTimeMillis();
     private final AIMessage aiMessage;
-    private String requestId;
-    private int promptTokens;
-    private int completionTokens;
-    private int totalTokens;
-    private double totalTime;
-
     private boolean completed = false;
 
-    public AIRequest(AIMessage aiMessage, List<ChatMessage> messages) {
-        this.aiMessage = aiMessage;
-
-        StreamingProcessor.start(aiMessage);
-        AIClient.sendRequest(this, messages);
+    public AIRequest(List<ChatMessage> content) {
+        aiMessage = (AIMessage) content.getLast();
+        Streamer.start(aiMessage);
+        AIClient.sendRequest(this, content);
     }
 
     public void onPartial(String partialChunk) {
-        StreamingProcessor.queueChunk(partialChunk);
+        Streamer.queueChunk(partialChunk);
     }
 
     public void onFinish() {
         completed = true;
-        StreamingProcessor.queueFinish();
+        Streamer.queueFinish();
     }
 
     public void onError(String error) {
-        onPartial(error);
+        aiMessage.onError(error);
         onFinish();
     }
 
-    public void setUsage(String id, int prompt, int completion, int total, double totalTime) {
-        this.requestId = id;
-        this.promptTokens = prompt;
-        this.completionTokens = completion;
-        this.totalTokens = total;
-        this.totalTime = totalTime;
+    public void setRunInfo(RunInfo runInfo) {
+        aiMessage.setRunInfo(runInfo);
     }
 
     public boolean isCompleted() {

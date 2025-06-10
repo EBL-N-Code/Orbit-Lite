@@ -20,28 +20,24 @@ public class UserMessage extends ChatMessage {
         wrapLines(maxWidth - 10);
 
         width = 0;
-        for (String line : wrappedContent) {
-            width = Math.max(width, textRenderer.getWidth(line));
+        for (String line : lines) {
+            width = Math.max(width, TEXT_RENDERER.getWidth(line));
         }
         width += 10;
     }
 
     public void render(DrawContext context) {
-        renderBackground(context);
+        RenderUtils.drawRect(context, x, y, width, height - 12, 8, 0xFF403566);
 
-        int yOffset = 0;
-        for (String line : wrappedContent) {
-            RenderUtils.drawText(context, line, x + 5, y + yOffset + 6);
-            yOffset += 10;
+        int y = this.y + 6;
+        for (String line : lines) {
+            RenderUtils.drawText(context, line, x + 5, y);
+            y += 10;
         }
     }
 
-    public void renderBackground(DrawContext context) {
-        RenderUtils.drawRect(context, x, y, width, height, 8, 0xFF403566);
-    }
-
     @Override
-    public MessageSender getSender() {
-        return MessageSender.USER;
+    public Sender getSender() {
+        return Sender.USER;
     }
 }

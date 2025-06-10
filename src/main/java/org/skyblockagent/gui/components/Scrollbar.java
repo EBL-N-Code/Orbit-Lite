@@ -18,6 +18,10 @@ public class Scrollbar {
     private double scrollPercentage;
     private float scrollOffset;
 
+    public Scrollbar() {
+        this(0f, 0f);
+    }
+
     public Scrollbar(double scrollPercentage, float scrollOffset) {
         this.defaultScrollPcnt = scrollPercentage;
         this.defauttScrollOffset = scrollOffset;

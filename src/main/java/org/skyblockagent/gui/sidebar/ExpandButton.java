@@ -1,19 +1,15 @@
 package org.skyblockagent.gui.sidebar;
 
 import net.minecraft.client.gui.DrawContext;
-import org.skyblockagent.gui.components.Button;
 import org.skyblockagent.gui.ChatScreen;
+import org.skyblockagent.gui.components.Button;
 import org.skyblockagent.utils.render.RenderUtils;
 
 public class ExpandButton extends Button {
+    private static final int SIZE = 19;
 
-    public ExpandButton(int width, int height) {
-        super(width, height);
-    }
-
-    @Override
-    public void onClick() {
-        ChatScreen.INSTANCE.getSidebar().toggle();
+    public ExpandButton() {
+        super(SIZE, SIZE);
     }
 
     @Override

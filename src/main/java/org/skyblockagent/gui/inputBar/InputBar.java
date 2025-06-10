@@ -7,21 +7,21 @@ import net.minecraft.util.StringHelper;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.glfw.GLFW;
+import org.skyblockagent.chat.ChatManager;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.components.Scrollbar;
 import org.skyblockagent.gui.components.Widget;
-import org.skyblockagent.chat.ChatManager;
-import org.skyblockagent.chat.session.InputState;
 import org.skyblockagent.utils.render.RenderUtils;
 
 import java.util.List;
 
 public class InputBar extends Widget {
+    private static final int MAX_LENGTH = 2000;
     public static final int Y_OFFSET = 10;
     public static final int LINE_HEIGHT = 10;
     private static final int MAX_HEIGHT = LINE_HEIGHT * 5;
     private final SendButton sendButton = new SendButton();
-    private final Scrollbar scrollbar = new Scrollbar(0f, 0f);
+    private final Scrollbar scrollbar = new Scrollbar();
     protected TextEditor textEditor = new TextEditor();
     protected InputState inputState;
     protected long lastSwitchFocusTime;
@@ -29,14 +29,17 @@ public class InputBar extends Widget {
     private boolean dragging = false;
     private long lastClickTime = 0;
     private int clickCount = 0;
+    private int length = 0;
     private double mouseY;
     private boolean disabled;
     private int linesCount;
 
     @Override
     protected void init() {
-        this.disabled = ChatManager.INSTANCE.hasActiveRequest();
-        this.inputState = ChatManager.INSTANCE.getSession().getInputState();
+        ChatManager chatManager = ChatManager.getInstance();
+        this.disabled = chatManager.hasActiveRequest();
+        this.inputState = chatManager.getChat().getInputState();
+        this.scrollbar.setScrollPercentage(inputState.getScrollPercentage());
         this.linesCount = -1;
 
         update();
@@ -45,11 +48,12 @@ public class InputBar extends Widget {
     protected void update() {
         lastSwitchFocusTime = Util.getMeasuringTimeMs();
         textEditor.wrapLines(width - 42);
+        checkLength();
 
         int linesSize = inputState.getLines().size();
         if (linesCount != linesSize) {
             linesCount = linesSize;
-            ChatScreen chatScreen = ChatScreen.INSTANCE;
+            ChatScreen chatScreen = ChatScreen.getInstance();
 
             int textHeight = Math.min(MAX_HEIGHT, getLinesHeight());
 
@@ -63,6 +67,15 @@ public class InputBar extends Widget {
         }
 
         updateScrollPosition(true);
+    }
+
+    private void checkLength() {
+        List<String> lines = inputState.getLines();
+        length = 0;
+
+        for (String line : lines) {
+            length += line.length();
+        }
     }
 
     /**
@@ -88,7 +101,7 @@ public class InputBar extends Widget {
      */
     private void scrollToCursor() {
         float maxScroll = getLinesHeight() - MAX_HEIGHT;
-        int cursorLine = inputState.getCursorPosition().line;
+        int cursorLine = inputState.getCursor().line;
         int cursorTopY = cursorLine * LINE_HEIGHT;
         int cursorBottomY = cursorTopY + LINE_HEIGHT;
         float scrollOffset = scrollbar.getScrollOffset();
@@ -104,25 +117,13 @@ public class InputBar extends Widget {
         setScrollPos(scrollOffset, scrollOffset / maxScroll);
     }
 
-    public void reset() {
-        inputState = ChatManager.INSTANCE.getSession().getInputState();
-        textEditor.reset();
-        scrollbar.reset();
-        linesCount = -1;
-
-        update();
-    }
-
-    public boolean canSend() {
-        return !textEditor.isEmpty() && !ChatManager.INSTANCE.hasActiveRequest();
-    }
-
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         context.getMatrices().push();
         context.getMatrices().translate(0f, 0f, 5f);
 
-        RenderUtils.drawRect(context, x, y, width, height, 8, 0xFF1C1F24, 2f, 0xFF27292E);
+        int outlineColor = isOverLimit() ? 0xFFFF5555 : 0xFF27292E;
+        RenderUtils.drawRect(context, x, y, width, height, 8, 0xFF1C1F24, 1f, outlineColor);
 
         textEditor.renderWidget(context, mouseX, mouseY, deltaTicks);
         sendButton.render(context, mouseX, mouseY);
@@ -161,7 +162,7 @@ public class InputBar extends Widget {
         if (!disabled) {
             if (scrollbar.mouseClicked(mouseX, mouseY)) return true;
             if (sendButton.isHovered(mouseX, mouseY)) {
-                if (canSend()) sendButton.onClick();
+                if (canSend()) ChatManager.getInstance().getChat().send();
                 textEditor.setFocused(false);
                 return true;
             }
@@ -197,7 +198,7 @@ public class InputBar extends Widget {
         } else if (textEditor.isFocused() && selectingText) {
             CursorPosition draggedPosition = mapMouseToCursor(mouseX, mouseY);
             inputState.setSelectionEnd(draggedPosition);
-            inputState.setCursorPosition(draggedPosition);
+            inputState.setCursor(draggedPosition);
 
             this.dragging = true;
             this.mouseY = mouseY;
@@ -212,6 +213,22 @@ public class InputBar extends Widget {
         dragging = false;
         selectingText = false;
         return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    public void reset() {
+        textEditor.reset();
+        scrollbar.reset();
+        linesCount = -1;
+
+        update();
+    }
+
+    public boolean canSend() {
+        return !textEditor.isEmpty() && !ChatManager.getInstance().hasActiveRequest() && !isOverLimit();
+    }
+
+    public boolean isOverLimit() {
+        return length > MAX_LENGTH;
     }
 
     /**
@@ -241,7 +258,7 @@ public class InputBar extends Widget {
                 case 81 -> {
                     if (Screen.hasControlDown()) {
                         textEditor.setCursor(new CursorPosition(inputState.getLines().size() - 1, inputState.getLines().getLast().length()), false);
-                        inputState.setSelectionEnd(new CursorPosition(0, 0));
+                        inputState.setSelectionEnd(new CursorPosition());
                         yield true;
                     }
                     yield false;
@@ -306,7 +323,7 @@ public class InputBar extends Widget {
                         yield true;
                     } else {
                         if (canSend()) {
-                            ChatManager.INSTANCE.getSession().send();
+                            ChatManager.getInstance().getChat().send();
                             yield true;
                         }
                         yield false;
@@ -342,28 +359,19 @@ public class InputBar extends Widget {
 
     @Override
     public void setFocused(boolean focused) {
-        if (ChatManager.INSTANCE.hasActiveRequest()) return;
+        if (ChatManager.getInstance().hasActiveRequest()) return;
         if (focused) disabled = false;
         super.setFocused(focused);
         textEditor.setFocused(focused);
     }
 
     public void setActivation(boolean focused) {
-        if (ChatScreen.INSTANCE == null) return;
         if (!focused) disabled = true;
 
-        if (!focused && ChatScreen.INSTANCE.getFocused() == this) {
-            ChatScreen.INSTANCE.setFocused(null);
-        } else if (focused) {
-            ChatScreen.INSTANCE.setFocused(this);
-        }
+        ChatScreen chatScreen = ChatScreen.getInstance();
+        chatScreen.setFocused(!focused && chatScreen.getFocused() == this ? null : this);
     }
 
-    /**
-     * Calculates the total height of the text editor's lines based on the line count and line height.
-     *
-     * @return The total height in pixels.
-     */
     public int getLinesHeight() {
         return inputState.getLines().size() * LINE_HEIGHT;
     }

@@ -8,6 +8,11 @@ public class CursorPosition {
     public int line;
     public int column;
 
+    public CursorPosition() {
+        this.line = 0;
+        this.column = 0;
+    }
+
     public CursorPosition(int line, int column) {
         this.line = line;
         this.column = column;
@@ -47,7 +52,7 @@ public class CursorPosition {
     }
 
     public CursorPosition offset(List<String> lines, int delta) {
-        if (lines.isEmpty()) return new CursorPosition(0, 0);
+        if (lines.isEmpty()) return new CursorPosition();
 
         int idx = getAbsoluteIndex(lines);
         idx = MathHelper.clamp(idx + delta, 0, getTotalLength(lines));
@@ -63,7 +68,7 @@ public class CursorPosition {
     }
 
     public CursorPosition clamp(List<String> lines) {
-        if (lines.isEmpty()) return new CursorPosition(0, 0);
+        if (lines.isEmpty()) return new CursorPosition();
 
         int lineClamped = MathHelper.clamp(this.line, 0, lines.size() - 1);
         int colClamped = MathHelper.clamp(this.column, 0, lines.get(lineClamped).length());

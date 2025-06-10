@@ -1,19 +1,23 @@
 package org.skyblockagent.network;
 
-import org.skyblockagent.gui.ChatScreen;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.minecraft.client.MinecraftClient;
 import org.skyblockagent.chat.message.AIMessage;
-import org.skyblockagent.chat.session.SessionLoader;
+import org.skyblockagent.chat.ChatStorage;
+import org.skyblockagent.gui.ChatScreen;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class StreamingProcessor {
+public class Streamer {
     private static final ConcurrentLinkedQueue<StreamEvent> eventQueue = new ConcurrentLinkedQueue<>();
     private static AIMessage currentMessage = null;
-    private static boolean finished = false;
+
+    public static void init() {
+        ClientTickEvents.END_CLIENT_TICK.register(Streamer::tick);
+    }
 
     public static void start(AIMessage message) {
         currentMessage = message;
-        finished = false;
         eventQueue.clear();
     }
 
@@ -25,21 +29,16 @@ public class StreamingProcessor {
         eventQueue.add(new StreamEvent.Finish());
     }
 
-    public static void tick() {
+    public static void tick(MinecraftClient client) {
         while (!eventQueue.isEmpty()) {
             StreamEvent event = eventQueue.poll();
             if (event instanceof StreamEvent.Chunk(String text)) {
-                if (currentMessage != null) {
-                    currentMessage.add(text);
-                }
+                currentMessage.add(text);
             } else if (event instanceof StreamEvent.Finish) {
-                if (finished) continue;
-                finished = true;
-
-                SessionLoader.saveSession();
-                ChatScreen.INSTANCE.getInputBar().setActivation(true);
-
-                currentMessage = null;
+                currentMessage.onFinish();
+                ChatStorage.getInstance().saveChat();
+                ChatScreen chatScreen = ChatScreen.getInstance();
+                if (chatScreen != null) chatScreen.getInputBar().setActivation(true);
             }
         }
     }

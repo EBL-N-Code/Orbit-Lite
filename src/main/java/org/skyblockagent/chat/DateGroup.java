@@ -1,4 +1,4 @@
-package org.skyblockagent.chat.session;
+package org.skyblockagent.chat;
 
 public enum DateGroup {
     TODAY, YESTERDAY, THIS_WEEK, THIS_MONTH, OLDER;

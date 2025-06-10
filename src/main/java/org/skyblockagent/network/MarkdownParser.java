@@ -12,13 +12,14 @@ import java.util.Stack;
 public class MarkdownParser {
     public static final MarkdownParser INSTANCE = new MarkdownParser();
     private final StringBuilder markdownBuffer = new StringBuilder();
-    private MutableText currentLine = Text.empty();
     private final List<MutableText> completedLines = new ArrayList<>();
     private final Stack<Formatting> activeStyles = new Stack<>();
+    private MutableText currentLine = Text.empty();
 
     /**
      * Appends a chunk of Markdown text from the stream.
      * After appending, it attempts to parse the accumulated buffer.
+     *
      * @param chunk The incoming piece of Markdown text.
      */
     public void processChunk(String chunk) {
@@ -128,6 +129,7 @@ public class MarkdownParser {
 
     /**
      * Appends a segment of plain text to the currentLine, applying active styles.
+     *
      * @param text The plain text segment.
      */
     private void appendTextSegment(String text) {
@@ -147,6 +149,7 @@ public class MarkdownParser {
      * If the style is already active (present in the stack), it's removed.
      * Otherwise, it's added (pushed onto the stack).
      * This simple toggle works for well-formed Markdown bold/italic.
+     *
      * @param styleToToggle The Formatting to toggle.
      */
     private void toggleStyle(Formatting styleToToggle) {
@@ -190,6 +193,7 @@ public class MarkdownParser {
 
     /**
      * Retrieves all fully parsed lines and clears the internal list.
+     *
      * @return A list of MutableText objects, each representing a displayable line.
      */
     public List<MutableText> getCompletedLinesAndClear() {
@@ -203,6 +207,7 @@ public class MarkdownParser {
      * If the internal markdownBuffer still has unparsed content (e.g. waiting for more chunks
      * to complete a token), this method will append that raw buffer content to the stylistically
      * processed currentLine for preview purposes.
+     *
      * @return The current, potentially incomplete, line with styles applied to processed parts.
      */
     public MutableText getCurrentLineText() {

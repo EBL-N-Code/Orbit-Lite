@@ -13,13 +13,9 @@ public abstract class Widget implements Drawable, Element, Selectable {
     protected int x, y, width, height;
     private boolean hovered;
     private boolean focused;
-    private boolean switchedFocus = false;
+    private boolean shouldFocus = true;
 
     public Widget() {}
-
-    public Widget(int x, int y, int width, int height) {
-        init(x, y, width, height);
-    }
 
     public void init(int x, int y, int width, int height) {
         this.x = x;
@@ -89,13 +85,13 @@ public abstract class Widget implements Drawable, Element, Selectable {
         this.focused = focused;
     }
 
-    public void setSwitchedFocus() {
-        this.switchedFocus = true;
+    public void disableFocus() {
+        this.shouldFocus = false;
     }
 
-    public boolean switchedFocus() {
-        boolean oldValue = switchedFocus;
-        switchedFocus = false;
+    public boolean shouldFocus() {
+        boolean oldValue = shouldFocus;
+        shouldFocus = true;
         return oldValue;
     }
 }

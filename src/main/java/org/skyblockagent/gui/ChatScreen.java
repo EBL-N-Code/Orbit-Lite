@@ -8,31 +8,29 @@ import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.sound.SoundManager;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector4f;
 import org.skyblockagent.gui.components.Widget;
-import org.skyblockagent.gui.header.Header;
 import org.skyblockagent.gui.inputBar.InputBar;
-import org.skyblockagent.gui.others.SafeScreen;
 import org.skyblockagent.gui.sidebar.Sidebar;
 import org.skyblockagent.utils.render.RenderUtils;
 
 import java.util.Optional;
 
-public class ChatScreen extends SafeScreen {
-    public static ChatScreen INSTANCE;
+public class ChatScreen extends Screen {
+    private static final MinecraftClient CLIENT = MinecraftClient.getInstance();
+    private static ChatScreen INSTANCE;
     private static final int CHAT_WIDTH = 520;
     private static final int CHAT_HEIGHT = 320;
-    private final int HEADER_HEIGHT = 25;
-    private final Screen parent;
+    private static final int HEADER_HEIGHT = 25;
     private int x, y, menuWidth, menuHeight;
     private Header header;
     private InputBar inputBar;
     private Sidebar sidebar;
     private ChatDisplay chatDisplay;
 
-    public ChatScreen(Screen parent) {
+    public ChatScreen() {
         super(Text.empty());
-        this.parent = parent;
         INSTANCE = this;
     }
 
@@ -73,18 +71,16 @@ public class ChatScreen extends SafeScreen {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         RenderUtils.drawRect(context, getLeft(), y + HEADER_HEIGHT, getChatWidth(), getChatHeight(), new Vector4f(0f, 8f, 0f, sidebar.isExpanded() ? 0f : 8f), 0xFF141519);
         super.render(context, mouseX, mouseY, delta);
-        drawBorders(context);
+
+        // Borders
+        RenderUtils.drawBorder(context, x + 1, y + 1, menuWidth - 2, menuHeight - 2, 7f, 2f, 0x10FFFFFF);
+        context.drawHorizontalLine(x, x + menuWidth - 1, y + 25, 0xFF000000);
+        RenderUtils.drawBorder(context, x, y, menuWidth, menuHeight, 8f, 1f, 0xFF000000);
     }
 
     @Override
     public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         renderDarkening(context);
-    }
-
-    public void drawBorders(DrawContext context) {
-        RenderUtils.drawBorder(context, x + 1, y + 1, menuWidth - 2, menuHeight - 2, 7f, 2f, 0x10FFFFFF);
-        context.drawHorizontalLine(x, x + menuWidth - 1, y + 25, 0xFF000000);
-        RenderUtils.drawBorder(context, x, y, menuWidth, menuHeight, 8f, 1f, 0xFF000000);
     }
 
     @Override
@@ -100,7 +96,7 @@ public class ChatScreen extends SafeScreen {
             if (element.mouseClicked(mouseX, mouseY, button)) {
                 playDownSound();
                 if (button == 0) this.setDragging(true);
-                if (!((Widget) element).switchedFocus()) this.setFocused(element);
+                if (((Widget) element).shouldFocus()) this.setFocused(element);
                 return true;
             }
         }
@@ -110,13 +106,13 @@ public class ChatScreen extends SafeScreen {
     }
 
     public void playDownSound() {
-        SoundManager soundManager = MinecraftClient.getInstance().getSoundManager();
+        SoundManager soundManager = CLIENT.getSoundManager();
         soundManager.play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
     }
 
     @Override
-    public void close() {
-        MinecraftClient.getInstance().setScreen(parent);
+    public void removed() {
+        INSTANCE = null;
     }
 
     public int getChatWidth() {
@@ -153,5 +149,17 @@ public class ChatScreen extends SafeScreen {
 
     public Sidebar getSidebar() {
         return sidebar;
+    }
+
+    public static void initDisplay(boolean focusOnBar, boolean resetPosition) {
+        if (INSTANCE != null) INSTANCE.initializeDisplay(focusOnBar, resetPosition);
+    }
+
+    public static void openScreen() {
+        CLIENT.send(() -> CLIENT.setScreen(new ChatScreen()));
+    }
+
+    public static ChatScreen getInstance() {
+        return INSTANCE;
     }
 }

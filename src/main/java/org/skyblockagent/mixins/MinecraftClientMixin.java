@@ -6,7 +6,7 @@ import net.minecraft.client.gui.screen.ReconfiguringScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import org.jetbrains.annotations.Nullable;
-import org.skyblockagent.gui.others.EmptyScreen;
+import org.skyblockagent.utils.EmptyScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;

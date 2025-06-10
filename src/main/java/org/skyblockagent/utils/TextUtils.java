@@ -1,10 +1,17 @@
 package org.skyblockagent.utils;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextHandler;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class TextUtils {
     private static final TextRenderer TEXT_RENDERER = MinecraftClient.getInstance().textRenderer;
+    private static final TextHandler TEXT_HANDLER = TEXT_RENDERER.getTextHandler();
 
     public static String trimString(String text, int maxWidth) {
         if (TEXT_RENDERER.getWidth(text) <= maxWidth) {
@@ -31,5 +38,11 @@ public class TextUtils {
         // Ensure we don't go out of bounds
         int cutOff = Math.max(0, low - 1);
         return text.substring(0, cutOff) + ellipsis;
+    }
+
+    public static List<String> wrapLines(String line, int maxWidth) {
+        List<String> list = new ArrayList<>();
+        TEXT_HANDLER.wrapLines(line, maxWidth, Style.EMPTY, true, (_, start, end) -> list.add(line.substring(start, end)));
+        return list;
     }
 }

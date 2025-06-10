@@ -8,6 +8,7 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -20,9 +21,10 @@ import org.skyblockagent.mixins.accessors.DrawContextAccessor;
  * Utility class for rendering Text and 2D shapes in Minecraft's GUI.
  */
 public class RenderUtils {
-    private final static TextRenderer TEXT_RENDERER = MinecraftClient.getInstance().textRenderer;
-    private final static Identifier FONT = Identifier.of(Skyblockagent.NAMESPACE, "custom_font");
+    private static final TextRenderer TEXT_RENDERER = MinecraftClient.getInstance().textRenderer;
+    private static final Identifier FONT = Identifier.of(Skyblockagent.NAMESPACE, "custom_font");
     private static final Style FONT_STYLE = Style.EMPTY.withFont(FONT);
+    public static final int WHITE_COLOR = 0xFFE0E0E0;
 
     public static void drawEllipse(DrawContext context, float x, float y, float width, float height, int fillColor, float outlineThickness, int outlineColor) {
         VertexConsumerProvider.Immediate consumers = ((DrawContextAccessor) context).getVertexConsumers();
@@ -81,19 +83,24 @@ public class RenderUtils {
         context.drawText(TEXT_RENDERER, Text.literal(text).setStyle(FONT_STYLE), x, y, color, shadow);
     }
 
+    public static void drawText(DrawContext context, MutableText text, int x, int y, int color, boolean shadow) {
+        context.drawText(TEXT_RENDERER, text.setStyle(FONT_STYLE), x, y, color, shadow);
+    }
+
     public static void drawText(DrawContext context, String text, int x, int y, int color) {
         drawText(context, text, x, y, color, false);
     }
 
     public static void drawText(DrawContext context, String text, int x, int y, boolean shadow) {
-        drawText(context, text, x, y, 0xFFE0E0E0, shadow);
+        drawText(context, text, x, y, WHITE_COLOR, shadow);
     }
 
     public static void drawText(DrawContext context, String text, int x, int y) {
-        drawText(context, text, x, y, 0xFFE0E0E0, false);
+        drawText(context, text, x, y, WHITE_COLOR, false);
     }
 
     public static void drawCenteredText(DrawContext context, String text, int centerX, int y) {
-        drawText(context, text, centerX - TEXT_RENDERER.getWidth(text) / 2, y, 0xFFE0E0E0, false);
+        // Test
+        drawText(context, text, centerX - TEXT_RENDERER.getWidth(text) / 2, y, WHITE_COLOR, false);
     }
 }

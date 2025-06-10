@@ -1,4 +1,4 @@
-package org.skyblockagent.chat.session;
+package org.skyblockagent.chat;
 
 import net.minecraft.util.Pair;
 
@@ -6,23 +6,40 @@ import java.util.*;
 
 public class ChatGrouper {
     private static final Map<DateGroup, Long> GROUP_THRESHOLDS = computeThresholds(System.currentTimeMillis());
-    private static final int LINE_HEIGHT = 19;
 
-    public static Pair<Integer, List<Line>> groupChats(List<Chat> chats) {
-        EnumSet<DateGroup> dateGroups = EnumSet.noneOf(DateGroup.class);
-        List<Line> lines = new ArrayList<>();
+    public static Pair<Integer, Map<DateGroup, List<Chat>>> groupChats(List<Chat> chats) {
+        Map<DateGroup, List<Chat>> groupedChats = new EnumMap<>(DateGroup.class);
         int maxOffset = 0;
 
-        for (Chat chat : chats) {
-            DateGroup group = classify(chat.getLastModified());
-            maxOffset += LINE_HEIGHT;
-            if (dateGroups.add(group)) {
-                lines.add(new Line(true, group, null));
-                maxOffset += LINE_HEIGHT + (group != DateGroup.OLDER ? 10 : 0);
-            }
-            lines.add(new Line(false, null, chat));
+        // Initialize lists for each group
+        for (DateGroup group : DateGroup.values()) {
+            groupedChats.put(group, new ArrayList<>());
         }
-        return new Pair<>(maxOffset, lines);
+
+        // Group chats
+        for (Chat chat : chats) {
+            DateGroup group = classify(chat.getModifiedAt());
+            groupedChats.get(group).add(chat);
+        }
+
+        // Sort chats within each group by lastModified (descending)
+        for (List<Chat> chatList : groupedChats.values()) {
+            chatList.sort(Comparator.comparing(Chat::getModifiedAt).reversed());
+        }
+
+        // Calculate maxOffset
+        for (DateGroup group : DateGroup.values()) {
+            List<Chat> chatList = groupedChats.get(group);
+            if (!chatList.isEmpty()) {
+                maxOffset += 19; // LINE_HEIGHT for group title
+                maxOffset += chatList.size() * 19; // LINE_HEIGHT per chat
+                if (group != DateGroup.OLDER) {
+                    maxOffset += 10; // Extra spacing for non-OLDER groups
+                }
+            }
+        }
+
+        return new Pair<>(maxOffset, groupedChats);
     }
 
     private static DateGroup classify(long timestamp) {

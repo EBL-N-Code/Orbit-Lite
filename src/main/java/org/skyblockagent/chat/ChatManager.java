@@ -1,59 +1,45 @@
 package org.skyblockagent.chat;
 
-import org.skyblockagent.chat.session.SessionLoader;
+import org.skyblockagent.chat.message.ChatMessage;
 import org.skyblockagent.network.AIRequest;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.chat.message.AIMessage;
-import org.skyblockagent.chat.session.Session;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 public class ChatManager {
-    public final static ChatManager INSTANCE = new ChatManager();
-    private final HashMap<UUID, Session> cachedSessions = new HashMap<>();
-    private Session session = new Session();
+    private final static ChatManager INSTANCE = new ChatManager();
+    private Chat chat = new Chat();
     private AIRequest request;
 
-    public void createSession() {
-        addToCache(session);
-        session = new Session();
-        if (ChatScreen.INSTANCE != null) {
-            ChatScreen.INSTANCE.initializeDisplay(true, true);
-        }
+    public void createChat() {
+        chat = new Chat();
+        ChatScreen.initDisplay(true, true);
     }
 
-    public void loadSession(UUID id) {
-        if (cachedSessions.containsKey(id)) {
-            addToCache(session);
-            session = cachedSessions.get(id);
-        } else {
-            Session loadedSession = SessionLoader.loadSession(id);
-            if (loadedSession == null) return;
-            addToCache(session);
-            session = loadedSession;
-        }
+    public void loadChat(UUID id) {
+        UUID currentChatId = chat.getId();
+        if (currentChatId != null && currentChatId.equals(id)) return;
+        chat = ChatStorage.getInstance().loadChat(id);
 
-        if (ChatScreen.INSTANCE != null) {
-            ChatScreen.INSTANCE.initializeDisplay(true, true);
-        }
+        ChatScreen.initDisplay(true, true);
     }
 
-    public void addToCache(Session session) {
-        UUID id = session.getId();
-        if (id != null) cachedSessions.put(id, session);
-    }
-
-    public void sendRequest(AIMessage aiMessage) {
-        ChatScreen.INSTANCE.getInputBar().setActivation(false);
-        this.request = new AIRequest(aiMessage, session.getChatMessages());
+    public void sendRequest(List<ChatMessage> content) {
+        ChatScreen.getInstance().getInputBar().setActivation(false);
+        request = new AIRequest(content);
     }
 
     public boolean hasActiveRequest() {
         return request != null && !request.isCompleted();
     }
 
-    public Session getSession() {
-        return session;
+    public Chat getChat() {
+        return chat;
+    }
+
+    public static ChatManager getInstance() {
+        return INSTANCE;
     }
 }

@@ -7,7 +7,7 @@ import com.google.gson.JsonParseException;
 import net.minecraft.client.MinecraftClient;
 import okhttp3.*;
 import org.skyblockagent.chat.message.ChatMessage;
-import org.skyblockagent.chat.message.MessageSender;
+import org.skyblockagent.chat.message.Sender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +21,7 @@ public class AIClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(AIClient.class);
     private static final String API_URL = "https://api.groq.com/openai/v1/chat/completions";
     private static final String API_KEY = "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";
-    private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+    private static final String MODEL = "meta-llama/llama-4-maverick-17b-128e-instruct";
     private static final Gson GSON = new Gson();
     private static OkHttpClient client;
 
@@ -29,30 +29,30 @@ public class AIClient {
         client = new OkHttpClient();
     }
 
-    public static void sendRequest(AIRequest request, List<ChatMessage> messages) {
+    public static void sendRequest(AIRequest request, List<ChatMessage> content) {
         MinecraftClient.getInstance().executeAsync(_ -> CompletableFuture.runAsync(() -> {
             try {
-                JsonObject payload = buildPayload(messages);
+                JsonObject payload = buildPayload(content);
                 Request httpRequest = buildHttpRequest(payload);
                 processResponse(httpRequest, request);
             } catch (Exception e) {
-                LOGGER.error("API error: {}", e.getMessage(), e);
+                LOGGER.error("API request error: {}", e.getMessage(), e);
                 request.onError(e.getMessage());
             }
         }));
     }
 
-    private static JsonObject buildPayload(List<ChatMessage> chatMessages) {
+    private static JsonObject buildPayload(List<ChatMessage> content) {
         JsonObject payload = new JsonObject();
-        payload.addProperty("model", "meta-llama/llama-4-maverick-17b-128e-instruct");
+        payload.addProperty("model", MODEL);
         payload.addProperty("stream", true);
 
         JsonArray messages = new JsonArray();
-        for (ChatMessage chatMessage : chatMessages) {
-            JsonObject userMessage = new JsonObject();
-            userMessage.addProperty("role", chatMessage.getSender() == MessageSender.AI ? "assistant" : "user");
-            userMessage.addProperty("content", chatMessage.getContent());
-            messages.add(userMessage);
+        for (ChatMessage message : content) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("role", message.getSender() == Sender.AI ? "assistant" : "user");
+            obj.addProperty("content", message.getContent());
+            messages.add(obj);
         }
         payload.add("messages", messages);
 
@@ -60,7 +60,7 @@ public class AIClient {
     }
 
     private static Request buildHttpRequest(JsonObject payload) {
-        RequestBody body = RequestBody.create(GSON.toJson(payload), JSON);
+        RequestBody body = RequestBody.create(GSON.toJson(payload), MediaType.get("application/json; charset=utf-8"));
         return new Request.Builder()
                 .url(API_URL)
                 .header("Authorization", "Bearer " + API_KEY)
@@ -72,15 +72,17 @@ public class AIClient {
     private static void processResponse(Request httpRequest, AIRequest request) throws IOException {
         try (Response response = client.newCall(httpRequest).execute()) {
             if (!response.isSuccessful()) {
-                LOGGER.error("API request failed with code: {}", response.code());
-                request.onError("API request failed with code: " + response.code());
-                throw new RuntimeException("API request failed with code: " + response.code());
+                String errorMessage = "API request failed with code: " + response.code();
+                LOGGER.error(errorMessage);
+                request.onError(errorMessage);
+                return;
             }
 
             if (response.body() == null) {
-                LOGGER.error("No response body");
-                request.onError("No response body");
-                throw new IOException("No response body");
+                String errorMessage = "No response body";
+                LOGGER.error(errorMessage);
+                request.onError(errorMessage);
+                return;
             }
 
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {
@@ -111,17 +113,20 @@ public class AIClient {
                 request.onPartial(partial);
             }
 
-            if (chunk.has("usage")) {
+            if (chunk.has("x_groq")) {
                 JsonObject xGroq = chunk.getAsJsonObject("x_groq");
-                String id = xGroq.get("id").getAsString();
-                JsonObject usage = chunk.getAsJsonObject("usage");
-                int prompt = usage.get("prompt_tokens").getAsInt();
-                int completion = usage.get("completion_tokens").getAsInt();
-                int total = usage.get("total_tokens").getAsInt();
-                double time = usage.get("total_time").getAsDouble();
-                request.setUsage(id, prompt, completion, total, time);
+                if (xGroq.has("usage")) {
+                    String id = xGroq.get("id").getAsString();
+                    JsonObject usage = xGroq.getAsJsonObject("usage");
+                    int promptTokens = usage.get("prompt_tokens").getAsInt();
+                    int completionTokens = usage.get("completion_tokens").getAsInt();
+                    int totalTokens = usage.get("total_tokens").getAsInt();
+                    double totalTime = usage.get("total_time").getAsDouble();
+                    double tps = totalTokens / totalTime;
+                    request.setRunInfo(new RunInfo(id, promptTokens, completionTokens, totalTokens, totalTime, tps));
+                }
             }
-        } catch (JsonParseException e) {
+        } catch (Exception e) {
             LOGGER.error("Error parsing chunk: {}", e.getMessage());
             request.onError(e.getMessage());
         }

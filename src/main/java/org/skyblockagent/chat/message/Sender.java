@@ -1,6 +1,6 @@
 package org.skyblockagent.chat.message;
 
-public enum MessageSender {
+public enum Sender {
     USER,
     AI,
 }
