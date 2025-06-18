@@ -74,7 +74,7 @@ public class ChatList extends Widget {
                     RenderUtils.drawRect(context, x + 8, currentY - 6, width - 18, 20, 6, bgColor);
                 }
 
-                RenderUtils.drawText(context, TextUtils.trimString(chat.getTitle(), width - 22), x + 12, currentY, RenderUtils.WHITE_COLOR);
+                RenderUtils.drawText(context, TextUtils.trimString(chat.getTitle(), width - 22), x + 12, currentY);
                 currentY += 19; // LINE_HEIGHT
             }
 

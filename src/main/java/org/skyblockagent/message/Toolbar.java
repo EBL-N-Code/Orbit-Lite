@@ -1,4 +1,4 @@
-package org.skyblockagent.chat.message;
+package org.skyblockagent.message;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;

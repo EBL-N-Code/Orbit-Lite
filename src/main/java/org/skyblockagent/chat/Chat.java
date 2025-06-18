@@ -1,12 +1,13 @@
 package org.skyblockagent.chat;
 
 import org.skyblockagent.gui.ChatScreen;
-import org.skyblockagent.chat.message.AIMessage;
-import org.skyblockagent.chat.message.ChatMessage;
-import org.skyblockagent.chat.message.UserMessage;
+import org.skyblockagent.message.AIMessage;
+import org.skyblockagent.message.ChatMessage;
+import org.skyblockagent.message.UserMessage;
 import org.skyblockagent.gui.inputBar.InputBar;
 import org.skyblockagent.gui.inputBar.InputState;
-import org.skyblockagent.network.AIRequest;
+import org.skyblockagent.network.Client;
+import org.skyblockagent.network.Streamer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,11 +67,12 @@ public class Chat {
 
     public void addAiMessage() {
         messages.add(new AIMessage());
-        ChatManager.getInstance().sendRequest(messages);
         modifiedAt = System.currentTimeMillis();
+        Client.send(messages);
     }
 
     public void retry() {
+        if (Streamer.isActive()) return;
         ChatMessage lastMessage = messages.removeLast();
         ChatScreen.getInstance().getChatDisplay().addSpace(-(lastMessage.getHeight() + 5));
         addAiMessage();

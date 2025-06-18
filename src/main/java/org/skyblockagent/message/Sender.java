@@ -1,4 +1,4 @@
-package org.skyblockagent.chat.message;
+package org.skyblockagent.message;
 
 public enum Sender {
     USER,

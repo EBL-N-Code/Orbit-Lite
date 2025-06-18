@@ -34,8 +34,8 @@ public class Header extends Widget {
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         RenderUtils.drawRect(context, x, y, width, height, new Vector4f(8f, 0f, 8f, 0f), 0xFF1F2227);
 
-        settingsButton.render(context, mouseX, mouseY);
-        upgradeButton.render(context, mouseX, mouseY);
+//        settingsButton.render(context, mouseX, mouseY);
+//        upgradeButton.render(context, mouseX, mouseY);
 
         if (title != null) {
             RenderUtils.drawCenteredText(context, title, titleX, y + 9);

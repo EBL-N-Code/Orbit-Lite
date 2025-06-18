@@ -3,11 +3,11 @@ package org.skyblockagent.network;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import net.minecraft.client.MinecraftClient;
 import okhttp3.*;
-import org.skyblockagent.chat.message.ChatMessage;
-import org.skyblockagent.chat.message.Sender;
+import org.skyblockagent.message.AIMessage;
+import org.skyblockagent.message.ChatMessage;
+import org.skyblockagent.message.Sender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,27 +17,35 @@ import java.io.InputStreamReader;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class AIClient {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AIClient.class);
+public class Client {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Client.class);
     private static final String API_URL = "https://api.groq.com/openai/v1/chat/completions";
     private static final String API_KEY = "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";
     private static final String MODEL = "meta-llama/llama-4-maverick-17b-128e-instruct";
     private static final Gson GSON = new Gson();
     private static OkHttpClient client;
+    private static Call activeCall = null;
+    private static volatile boolean interrupt = false;
 
     public static void initClient() {
         client = new OkHttpClient();
     }
 
-    public static void sendRequest(AIRequest request, List<ChatMessage> content) {
+    public static void send(List<ChatMessage> content) {
+        interrupt = false;
+        Streamer.start((AIMessage) content.getLast());
         MinecraftClient.getInstance().executeAsync(_ -> CompletableFuture.runAsync(() -> {
             try {
                 JsonObject payload = buildPayload(content);
                 Request httpRequest = buildHttpRequest(payload);
-                processResponse(httpRequest, request);
+                activeCall = client.newCall(httpRequest);
+                processResponse(activeCall);
             } catch (Exception e) {
+                if (interrupt) return;
                 LOGGER.error("API request error: {}", e.getMessage(), e);
-                request.onError(e.getMessage());
+                Streamer.onError(e.getMessage());
+            } finally {
+                activeCall = null;
             }
         }));
     }
@@ -49,6 +57,7 @@ public class AIClient {
 
         JsonArray messages = new JsonArray();
         for (ChatMessage message : content) {
+            if (message.isError()) continue;
             JsonObject obj = new JsonObject();
             obj.addProperty("role", message.getSender() == Sender.AI ? "assistant" : "user");
             obj.addProperty("content", message.getContent());
@@ -69,19 +78,19 @@ public class AIClient {
                 .build();
     }
 
-    private static void processResponse(Request httpRequest, AIRequest request) throws IOException {
-        try (Response response = client.newCall(httpRequest).execute()) {
+    private static void processResponse(Call call) throws IOException {
+        try (Response response = call.execute()) {
             if (!response.isSuccessful()) {
                 String errorMessage = "API request failed with code: " + response.code();
                 LOGGER.error(errorMessage);
-                request.onError(errorMessage);
+                Streamer.onError(errorMessage);
                 return;
             }
 
             if (response.body() == null) {
                 String errorMessage = "No response body";
                 LOGGER.error(errorMessage);
-                request.onError(errorMessage);
+                Streamer.onError(errorMessage);
                 return;
             }
 
@@ -94,14 +103,14 @@ public class AIClient {
                     }
                     line = line.substring("data:".length()).trim();
                     if (line.equals("[DONE]")) break;
-                    processChunk(line, request);
+                    processChunk(line);
                 }
-                request.onFinish();
+                Streamer.queueFinish();
             }
         }
     }
 
-    private static void processChunk(String line, AIRequest request) {
+    private static void processChunk(String line) {
         try {
             JsonObject chunk = GSON.fromJson(line, JsonObject.class);
             JsonObject delta = chunk.getAsJsonArray("choices")
@@ -110,7 +119,7 @@ public class AIClient {
 
             if (delta.has("content")) {
                 String partial = delta.get("content").getAsString();
-                request.onPartial(partial);
+                Streamer.queueChunk(partial);
             }
 
             if (chunk.has("x_groq")) {
@@ -123,12 +132,20 @@ public class AIClient {
                     int totalTokens = usage.get("total_tokens").getAsInt();
                     double totalTime = usage.get("total_time").getAsDouble();
                     double tps = totalTokens / totalTime;
-                    request.setRunInfo(new RunInfo(id, promptTokens, completionTokens, totalTokens, totalTime, tps));
+                    Streamer.setUsage(id, promptTokens, completionTokens, totalTokens, totalTime, tps);
                 }
             }
         } catch (Exception e) {
             LOGGER.error("Error parsing chunk: {}", e.getMessage());
-            request.onError(e.getMessage());
+            Streamer.onError(e.getMessage());
+        }
+    }
+
+    public static void interrupt() {
+        interrupt = true;
+        Streamer.interrupt();
+        if (activeCall != null) {
+            activeCall.cancel();
         }
     }
 }

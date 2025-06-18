@@ -8,7 +8,6 @@ import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.sound.SoundManager;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
-import org.jetbrains.annotations.Nullable;
 import org.joml.Vector4f;
 import org.skyblockagent.gui.components.Widget;
 import org.skyblockagent.gui.inputBar.InputBar;

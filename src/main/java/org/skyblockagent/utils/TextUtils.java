@@ -4,7 +4,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextHandler;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.text.Style;
-import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,11 +11,10 @@ import java.util.List;
 public class TextUtils {
     private static final TextRenderer TEXT_RENDERER = MinecraftClient.getInstance().textRenderer;
     private static final TextHandler TEXT_HANDLER = TEXT_RENDERER.getTextHandler();
+    private static final Style EMPTY_STYLE = Style.EMPTY;
 
     public static String trimString(String text, int maxWidth) {
-        if (TEXT_RENDERER.getWidth(text) <= maxWidth) {
-            return text;
-        }
+        if (TEXT_RENDERER.getWidth(text) <= maxWidth) return text;
 
         String ellipsis = "...";
         int ellipsisWidth = TEXT_RENDERER.getWidth(ellipsis);
@@ -42,7 +40,7 @@ public class TextUtils {
 
     public static List<String> wrapLines(String line, int maxWidth) {
         List<String> list = new ArrayList<>();
-        TEXT_HANDLER.wrapLines(line, maxWidth, Style.EMPTY, true, (_, start, end) -> list.add(line.substring(start, end)));
+        TEXT_HANDLER.wrapLines(line, maxWidth, EMPTY_STYLE, true, (_, start, end) -> list.add(line.substring(start, end)));
         return list;
     }
 }

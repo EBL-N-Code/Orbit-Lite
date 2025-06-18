@@ -9,7 +9,7 @@ import org.skyblockagent.gui.components.Widget;
 import org.skyblockagent.utils.render.RenderUtils;
 
 public class Sidebar extends Widget {
-    private static boolean isExpanded = true;
+    private static boolean isExpanded = false;
     private final ExpandButton expandButton = new ExpandButton();
     private final Button chatButton = new Button("+ New chat");
     private final ChatList chatList = new ChatList();

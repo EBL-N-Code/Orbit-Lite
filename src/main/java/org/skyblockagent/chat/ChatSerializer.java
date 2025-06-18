@@ -2,14 +2,12 @@ package org.skyblockagent.chat;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import net.minecraft.client.util.ChatMessages;
-import org.skyblockagent.chat.message.AIMessage;
-import org.skyblockagent.chat.message.ChatMessage;
-import org.skyblockagent.chat.message.Sender;
-import org.skyblockagent.chat.message.UserMessage;
+import org.skyblockagent.message.AIMessage;
+import org.skyblockagent.message.ChatMessage;
+import org.skyblockagent.message.Sender;
+import org.skyblockagent.message.UserMessage;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 

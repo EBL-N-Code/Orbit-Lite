@@ -34,7 +34,7 @@ public class Tooltip {
         int yOffset = y + 3;
         for (Map.Entry<String, String> entry : lines.entrySet()) {
             RenderUtils.drawText(context, entry.getKey(), x + 3, yOffset, 0xA0A0A0);
-            RenderUtils.drawText(context, entry.getValue(), x + width - 3 - TEXT_RENDERER.getWidth(entry.getValue()), yOffset, RenderUtils.WHITE_COLOR);
+            RenderUtils.drawText(context, entry.getValue(), x + width - 3 - TEXT_RENDERER.getWidth(entry.getValue()), yOffset);
             yOffset += 10;
         }
         context.getMatrices().pop();

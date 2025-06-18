@@ -66,8 +66,7 @@ public class ChatStorage {
         }
     }
 
-    public void saveChat() {
-        Chat chat = ChatManager.getInstance().getChat();
+    public void saveChat(Chat chat) {
         Path filePath = CHAT_FOLDER.resolve(chat.getId().toString() + ".json");
         try (BufferedWriter writer = Files.newBufferedWriter(filePath)) {
             ChatSerializer.getFullChatGson().toJson(chat, writer);

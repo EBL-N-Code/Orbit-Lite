@@ -39,10 +39,6 @@ public class RenderUtils {
         drawEllipse(context, x, y, width, height, color, 0f, 0);
     }
 
-    public static void drawEllipseBorder(DrawContext context, float x, float y, float width, float height, float thickness, int color) {
-        drawEllipse(context, x, y, width, height, 0x00000000, thickness, color);
-    }
-
     public static void drawRect(DrawContext context, float x, float y, float width, float height, Vector4f roundness, int fillColor, float outlineThickness, int outlineColor) {
         VertexConsumerProvider.Immediate consumers = ((DrawContextAccessor) context).getVertexConsumers();
         RenderLayer renderLayer = RenderLayers.getRectLayer(fillColor, outlineColor, outlineThickness, roundness, new Vector2f(width, height));
@@ -83,8 +79,8 @@ public class RenderUtils {
         context.drawText(TEXT_RENDERER, Text.literal(text).setStyle(FONT_STYLE), x, y, color, shadow);
     }
 
-    public static void drawText(DrawContext context, MutableText text, int x, int y, int color, boolean shadow) {
-        context.drawText(TEXT_RENDERER, text.setStyle(FONT_STYLE), x, y, color, shadow);
+    public static void drawText(DrawContext context, MutableText text, int x, int y) {
+        context.drawText(TEXT_RENDERER, text.setStyle(text.getStyle().withFont(FONT)), x, y, WHITE_COLOR, false);
     }
 
     public static void drawText(DrawContext context, String text, int x, int y, int color) {
@@ -100,7 +96,6 @@ public class RenderUtils {
     }
 
     public static void drawCenteredText(DrawContext context, String text, int centerX, int y) {
-        // Test
         drawText(context, text, centerX - TEXT_RENDERER.getWidth(text) / 2, y, WHITE_COLOR, false);
     }
 }

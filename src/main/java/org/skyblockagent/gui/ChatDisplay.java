@@ -4,21 +4,21 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import org.skyblockagent.chat.Chat;
 import org.skyblockagent.chat.ChatManager;
-import org.skyblockagent.chat.message.ChatMessage;
-import org.skyblockagent.chat.message.Sender;
-import org.skyblockagent.chat.message.Toolbar;
+import org.skyblockagent.message.ChatMessage;
+import org.skyblockagent.message.Toolbar;
 import org.skyblockagent.gui.components.Scrollbar;
 import org.skyblockagent.gui.components.Widget;
 import org.skyblockagent.utils.render.RenderUtils;
 
 import java.util.List;
+import java.util.UUID;
 
 public class ChatDisplay extends Widget {
     private static final String WELCOME_TEXT = "Welcome back, " + MinecraftClient.getInstance().getGameProfile().getName();
     private final Scrollbar scrollbar = new Scrollbar(1f, 0f);
+    private Chat chat;
     private ChatMessage hoveredMsg;
     private int fullWidth, fullHeight;
-    private int maxUserMsgWidth;
     private int yOffset;
 
     @Override
@@ -26,21 +26,26 @@ public class ChatDisplay extends Widget {
         ChatScreen chatScreen = ChatScreen.getInstance();
         this.fullWidth = chatScreen.getChatWidth();
         this.fullHeight = chatScreen.getChatHeight();
-        this.maxUserMsgWidth = (width * 2) / 3;
         this.yOffset = 10;
+        chat = ChatManager.getInstance().getChat();
 
-        for (ChatMessage chatMessage : ChatManager.getInstance().getChat().getMessages()) {
-            chatMessage.init(x, y + yOffset, width, maxUserMsgWidth, true);
+        for (ChatMessage chatMessage : chat.getMessages()) {
+            chatMessage.init(x, y + yOffset, width);
             yOffset += chatMessage.getHeight() + 5;
         }
         scrollbar.init(y, height, chatScreen.getRight(), yOffset);
     }
 
     public void onMessage(ChatMessage chatMessage) {
-        chatMessage.init(x, y + yOffset, width, maxUserMsgWidth, chatMessage.getSender() == Sender.USER);
+        chatMessage.init(x, y + yOffset, width);
 
         scrollbar.reset();
         addSpace(chatMessage.getHeight() + 5);
+    }
+
+    public void updateHeight(int newHeight) {
+        height = newHeight;
+        scrollbar.init(y, height, ChatScreen.getInstance().getRight(), yOffset);
     }
 
     public void addSpace(int space) {
@@ -48,9 +53,9 @@ public class ChatDisplay extends Widget {
         scrollbar.updateOffset(yOffset, height);
     }
 
-    public void updateHeight(int newHeight) {
-        height = newHeight;
-        scrollbar.init(y, height, ChatScreen.getInstance().getRight(), yOffset);
+    public void addSpace(int space, UUID chatId) {
+        if (chatId != chat.getId()) return;
+        addSpace(space);
     }
 
     @Override

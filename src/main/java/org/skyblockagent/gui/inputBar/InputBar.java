@@ -11,6 +11,8 @@ import org.skyblockagent.chat.ChatManager;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.components.Scrollbar;
 import org.skyblockagent.gui.components.Widget;
+import org.skyblockagent.network.Client;
+import org.skyblockagent.network.Streamer;
 import org.skyblockagent.utils.render.RenderUtils;
 
 import java.util.List;
@@ -31,13 +33,11 @@ public class InputBar extends Widget {
     private int clickCount = 0;
     private int length = 0;
     private double mouseY;
-    private boolean disabled;
     private int linesCount;
 
     @Override
     protected void init() {
         ChatManager chatManager = ChatManager.getInstance();
-        this.disabled = chatManager.hasActiveRequest();
         this.inputState = chatManager.getChat().getInputState();
         this.scrollbar.setScrollPercentage(inputState.getScrollPercentage());
         this.linesCount = -1;
@@ -159,24 +159,24 @@ public class InputBar extends Widget {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         this.lastSwitchFocusTime = Util.getMeasuringTimeMs();
 
-        if (!disabled) {
-            if (scrollbar.mouseClicked(mouseX, mouseY)) return true;
-            if (sendButton.isHovered(mouseX, mouseY)) {
-                if (canSend()) ChatManager.getInstance().getChat().send();
-                textEditor.setFocused(false);
-                return true;
+        if (scrollbar.mouseClicked(mouseX, mouseY)) return true;
+        if (sendButton.isHovered(mouseX, mouseY)) {
+            if (canSend()) {
+                ChatManager.getInstance().getChat().send();
+            } else if (Streamer.isActive()) {
+                Client.interrupt();
             }
-
-            long currentTime = System.currentTimeMillis();
-            clickCount = currentTime - lastClickTime <= MAX_DOUBLE_CLICK_INTERVAL ? clickCount + 1 : 1;
-            lastClickTime = currentTime;
-            textEditor.setFocused(true);
-            textEditor.onClick(mapMouseToCursor(mouseX, mouseY), clickCount);
-            selectingText = true;
+            textEditor.setFocused(false);
             return true;
         }
 
-        return false;
+        long currentTime = System.currentTimeMillis();
+        clickCount = currentTime - lastClickTime <= MAX_DOUBLE_CLICK_INTERVAL ? clickCount + 1 : 1;
+        lastClickTime = currentTime;
+        textEditor.setFocused(true);
+        textEditor.onClick(mapMouseToCursor(mouseX, mouseY), clickCount);
+        selectingText = true;
+        return true;
     }
 
     @Override
@@ -224,7 +224,7 @@ public class InputBar extends Widget {
     }
 
     public boolean canSend() {
-        return !textEditor.isEmpty() && !ChatManager.getInstance().hasActiveRequest() && !isOverLimit();
+        return !textEditor.isEmpty() && !Streamer.isActive() && !isOverLimit();
     }
 
     public boolean isOverLimit() {
@@ -359,17 +359,8 @@ public class InputBar extends Widget {
 
     @Override
     public void setFocused(boolean focused) {
-        if (ChatManager.getInstance().hasActiveRequest()) return;
-        if (focused) disabled = false;
         super.setFocused(focused);
         textEditor.setFocused(focused);
-    }
-
-    public void setActivation(boolean focused) {
-        if (!focused) disabled = true;
-
-        ChatScreen chatScreen = ChatScreen.getInstance();
-        chatScreen.setFocused(!focused && chatScreen.getFocused() == this ? null : this);
     }
 
     public int getLinesHeight() {
