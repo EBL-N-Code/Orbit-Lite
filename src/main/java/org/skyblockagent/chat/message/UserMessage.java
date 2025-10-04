@@ -1,8 +1,8 @@
-package org.skyblockagent.message;
+package org.skyblockagent.chat.message;
 
 import net.minecraft.client.gui.DrawContext;
 import org.skyblockagent.utils.TextUtils;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.render.RenderUtils;
 
 import java.util.ArrayList;
 import java.util.List;

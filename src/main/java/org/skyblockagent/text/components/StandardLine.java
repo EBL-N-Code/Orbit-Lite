@@ -4,7 +4,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.MutableText;
 import org.skyblockagent.text.VisualLine;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.render.RenderUtils;
 
 public record StandardLine(MutableText text) implements VisualLine {
 

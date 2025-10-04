@@ -22,7 +22,7 @@ public class InputState {
         this.scrollPercentage = scrollPercentage;
     }
 
-    public void reset() {
+    public void clear() {
         lines.clear();
         lines.add("");
         cursor = new CursorPosition();

@@ -3,7 +3,7 @@ package org.skyblockagent.gui.components;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.render.RenderUtils;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

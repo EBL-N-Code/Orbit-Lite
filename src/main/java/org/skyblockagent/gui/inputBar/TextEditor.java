@@ -1,17 +1,15 @@
 package org.skyblockagent.gui.inputBar;
 
-import net.minecraft.client.font.TextHandler;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.text.Style;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import org.skyblockagent.chat.ChatManager;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.components.Widget;
 import org.skyblockagent.utils.TextUtils;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.render.RenderUtils;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -269,6 +267,7 @@ public class TextEditor extends Widget {
                 List<String> lines = getLines();
                 CursorPosition cursor = getCursor();
                 String line = lines.get(cursor.line);
+                //FIXME: error in this line (Caused by: java.lang.StringIndexOutOfBoundsException: Range [0, -12) out of bounds for length 12)
                 int cursorX = x + textRenderer.getWidth(line.substring(0, Math.min(line.length(), cursor.column)));
                 int cursorY = y + cursor.line * InputBar.LINE_HEIGHT;
 

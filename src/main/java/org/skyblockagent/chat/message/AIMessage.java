@@ -1,32 +1,31 @@
-package org.skyblockagent.message;
+package org.skyblockagent.chat.message;
 
 import net.minecraft.client.gui.DrawContext;
-import org.skyblockagent.chat.ChatManager;
+import org.skyblockagent.chat.Chat;
 import org.skyblockagent.gui.ChatDisplay;
 import org.skyblockagent.gui.ChatScreen;
-import org.skyblockagent.network.RunInfo;
 import org.skyblockagent.text.StreamProcessor;
 import org.skyblockagent.utils.TextUtils;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.render.RenderUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 public class AIMessage extends ChatMessage {
-    private static final int ERROR_BACKGROUND_COLOR = 0x40FF5555;
-    private static final int ERROR_BORDER_COLOR = 0xFFFF5555;
-    private static final int ERROR_TEXT_COLOR = 0xFFFF5555;
     private final StreamProcessor streamProcessor = new StreamProcessor();
     private final StringBuilder rawContent = new StringBuilder();
     private final List<String> errorMessageLines = new ArrayList<>();
-    private final UUID chatId = ChatManager.getInstance().getChat().getId();
+    private Chat chat;
     private String errorMessage;
-    private RunInfo runInfo;
+    private UsageInfo usageInfo;
     private boolean completed;
 
-    public AIMessage() {
+    public record UsageInfo(int completionTokens, int promptTokens, int totalTokens, int totalTime, double tps) { }
+
+    public AIMessage(Chat chat) {
         super();
+        this.chat = chat;
+        chat.addAiMessage(this);
         updateDisplay();
     }
 
@@ -48,7 +47,7 @@ public class AIMessage extends ChatMessage {
     @Override
     public void calculateHeight() {
         height = (error ? errorMessageLines.size() * LINE_HEIGHT : streamProcessor.getHeight());
-        if (completed || error) height += TOOLBAR_AREA_HEIGHT;
+        height += TOOLBAR_AREA_HEIGHT;
     }
 
     @Override
@@ -67,11 +66,11 @@ public class AIMessage extends ChatMessage {
     }
 
     public void renderError(DrawContext context) {
-        RenderUtils.drawRect(context, x, y, width, height - (TOOLBAR_AREA_HEIGHT - 6), 6, ERROR_BACKGROUND_COLOR, 1f, ERROR_BORDER_COLOR);
+        RenderUtils.drawRect(context, x, y, width, height - (TOOLBAR_AREA_HEIGHT - 6), 6, 0x40FF5555, 1f, 0xFFFF5555);
         int lineY = y + 4;
         int lineX = x + 6;
         for (String line : errorMessageLines) {
-            RenderUtils.drawText(context, line, lineX, lineY, ERROR_TEXT_COLOR);
+            RenderUtils.drawText(context, line, lineX, lineY, 0xFFFF5555);
             lineY += LINE_HEIGHT;
         }
     }
@@ -82,6 +81,7 @@ public class AIMessage extends ChatMessage {
         update();
     }
 
+    //TODO: this may have to be called from Chat not from append, onError, onFinish
     public void update() {
         int oldHeight = height;
         calculateHeight();
@@ -91,7 +91,7 @@ public class AIMessage extends ChatMessage {
             ChatDisplay chatDisplay = chatScreen.getChatDisplay();
             int diff = height - oldHeight;
             if (diff != 0) {
-                chatDisplay.addSpace(diff, chatId);
+                chatDisplay.addSpace(diff, chat.getUuid());
             }
         }
     }
@@ -131,11 +131,13 @@ public class AIMessage extends ChatMessage {
         return Sender.AI;
     }
 
-    public RunInfo getRunInfo() {
-        return runInfo;
+    public UsageInfo getUsage() {
+        return usageInfo;
     }
 
-    public void setRunInfo(RunInfo runInfo) {
-        this.runInfo = runInfo;
+    public void setUsage(int completionTokens, int promptTokens, int totalTime) {
+        int totalTokens = completionTokens + promptTokens;
+        double tps = (double) totalTokens / totalTime;
+        this.usageInfo = new UsageInfo(completionTokens, promptTokens, totalTokens, totalTime, tps);
     }
 }

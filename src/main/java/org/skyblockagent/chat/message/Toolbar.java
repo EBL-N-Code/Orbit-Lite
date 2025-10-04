@@ -1,4 +1,4 @@
-package org.skyblockagent.message;
+package org.skyblockagent.chat.message;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -9,8 +9,7 @@ import org.skyblockagent.Skyblockagent;
 import org.skyblockagent.chat.ChatManager;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.components.Tooltip;
-import org.skyblockagent.network.RunInfo;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.render.RenderUtils;
 
 import java.util.*;
 
@@ -32,11 +31,11 @@ public class Toolbar {
         x = isAI ? message.getX() : message.getX() + message.getWidth() - ICON_SIZE - 6;
         y = message.getY() + message.getHeight() - (isAI ? 14 : 8);
         if (isAI) {
-            RunInfo runInfo = ((AIMessage) message).getRunInfo();
-            if (runInfo != null) {
-                timeText = String.format("%.2f", runInfo.totalTime()) + "s";
+            AIMessage.UsageInfo usageInfo = ((AIMessage) message).getUsage();
+            if (usageInfo != null) {
+                timeText = String.format("%.2f", usageInfo.totalTime() / 1000.0) + "s";
                 textWidth = TEXT_RENDERER.getWidth(timeText) + 6;
-                tooltip = new Tooltip(makeTooltip(runInfo));
+                tooltip = new Tooltip(makeTooltip(usageInfo));
             }
         }
     }
@@ -85,12 +84,12 @@ public class Toolbar {
         return false;
     }
 
-    public LinkedHashMap<String, String> makeTooltip(RunInfo runInfo) {
+    public LinkedHashMap<String, String> makeTooltip(AIMessage.UsageInfo usageInfo) {
         LinkedHashMap<String, String> lines = new LinkedHashMap<>();
-        lines.put("Prompt tokens:", String.valueOf(runInfo.promptTokens()));
-        lines.put("Completion tokens:", String.valueOf(runInfo.completionTokens()));
-        lines.put("Total tokens:", String.valueOf(runInfo.totalTokens()));
-        lines.put("TPS:", String.format("%.2f", runInfo.tps()));
+        lines.put("Prompt tokens:", String.valueOf(usageInfo.promptTokens()));
+        lines.put("Completion tokens:", String.valueOf(usageInfo.completionTokens()));
+        lines.put("Total tokens:", String.valueOf(usageInfo.totalTokens()));
+        lines.put("TPS:", String.format("%.2f", usageInfo.tps()));
         return lines;
     }
 

@@ -4,14 +4,13 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import org.skyblockagent.chat.Chat;
 import org.skyblockagent.chat.ChatManager;
-import org.skyblockagent.message.ChatMessage;
-import org.skyblockagent.message.Toolbar;
+import org.skyblockagent.chat.message.ChatMessage;
+import org.skyblockagent.chat.message.Toolbar;
 import org.skyblockagent.gui.components.Scrollbar;
 import org.skyblockagent.gui.components.Widget;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.render.RenderUtils;
 
 import java.util.List;
-import java.util.UUID;
 
 public class ChatDisplay extends Widget {
     private static final String WELCOME_TEXT = "Welcome back, " + MinecraftClient.getInstance().getGameProfile().getName();
@@ -24,10 +23,10 @@ public class ChatDisplay extends Widget {
     @Override
     protected void init() {
         ChatScreen chatScreen = ChatScreen.getInstance();
-        this.fullWidth = chatScreen.getChatWidth();
-        this.fullHeight = chatScreen.getChatHeight();
-        this.yOffset = 10;
+        fullWidth = chatScreen.getChatWidth();
+        fullHeight = chatScreen.getChatHeight();
         chat = ChatManager.getInstance().getChat();
+        yOffset = 10;
 
         for (ChatMessage chatMessage : chat.getMessages()) {
             chatMessage.init(x, y + yOffset, width);
@@ -53,8 +52,8 @@ public class ChatDisplay extends Widget {
         scrollbar.updateOffset(yOffset, height);
     }
 
-    public void addSpace(int space, UUID chatId) {
-        if (chatId != chat.getId()) return;
+    public void addSpace(int space, String chatId) {
+        if (!chatId.equals(chat.getUuid())) return;
         addSpace(space);
     }
 

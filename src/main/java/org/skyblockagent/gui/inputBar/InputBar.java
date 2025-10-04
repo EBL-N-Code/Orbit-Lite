@@ -11,9 +11,9 @@ import org.skyblockagent.chat.ChatManager;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.components.Scrollbar;
 import org.skyblockagent.gui.components.Widget;
-import org.skyblockagent.network.Client;
-import org.skyblockagent.network.Streamer;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.network.BackendService;
+import org.skyblockagent.network.HttpUtils;
+import org.skyblockagent.render.RenderUtils;
 
 import java.util.List;
 
@@ -163,8 +163,8 @@ public class InputBar extends Widget {
         if (sendButton.isHovered(mouseX, mouseY)) {
             if (canSend()) {
                 ChatManager.getInstance().getChat().send();
-            } else if (Streamer.isActive()) {
-                Client.interrupt();
+            } else if (BackendService.hasActiveCall()) {
+                HttpUtils.interceptStreaming();
             }
             textEditor.setFocused(false);
             return true;
@@ -224,7 +224,7 @@ public class InputBar extends Widget {
     }
 
     public boolean canSend() {
-        return !textEditor.isEmpty() && !Streamer.isActive() && !isOverLimit();
+        return !textEditor.isEmpty() && !BackendService.hasActiveCall() && !isOverLimit();
     }
 
     public boolean isOverLimit() {

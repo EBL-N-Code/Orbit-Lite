@@ -1,32 +1,38 @@
 package org.skyblockagent.gui.sidebar;
 
 import net.minecraft.client.gui.DrawContext;
-import org.skyblockagent.chat.Chat;
-import org.skyblockagent.chat.ChatManager;
-import org.skyblockagent.chat.ChatStorage;
-import org.skyblockagent.chat.DateGroup;
+import org.skyblockagent.chat.*;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.components.Scrollbar;
 import org.skyblockagent.gui.components.Widget;
+import org.skyblockagent.network.BackendService;
 import org.skyblockagent.utils.TextUtils;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.render.RenderUtils;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public class ChatList extends Widget {
     private final Scrollbar scrollbar = new Scrollbar();
-    private Chat hoveredChat;
+    private ChatSummary hoveredChat;
 
     @Override
     protected void init() {
-        scrollbar.init(y, height, x + width, ChatStorage.getInstance().getMaxOffset());
+        scrollbar.init(y, height, x + width, getMaxOffset());
     }
 
-    public void onChatClick() {
-        ChatManager.getInstance().loadChat(hoveredChat.getId());
-        ChatScreen.getInstance().getSidebar().disableFocus();
+    public int getMaxOffset() {
+        Map<DateGroup, List<ChatSummary>> groupedChats = BackendService.getChatSummaries();
+        return Arrays.stream(DateGroup.values())
+                .mapToInt(group -> {
+                    int size = groupedChats.get(group).size();
+                    if (size == 0) return 0;
+                    int offset = 19 + size * 19;
+                    if (group != DateGroup.OLDER) offset += 10;
+                    return offset;
+                })
+                .sum();
     }
 
     @Override
@@ -36,13 +42,13 @@ public class ChatList extends Widget {
         context.getMatrices().push();
         context.getMatrices().translate(0, -scrollOffset, 0);
 
-        Map<DateGroup, List<Chat>> groupedChats = ChatStorage.getInstance().getGroupedChats();
-        UUID currentChatId = ChatManager.getInstance().getChat().getId();
+        Map<DateGroup, List<ChatSummary>> groupedChats = BackendService.getChatSummaries();
+        String currentChatId = ChatManager.getInstance().getChat().getUuid();
         hoveredChat = null;
         int currentY = y;
 
         for (DateGroup group : DateGroup.values()) {
-            List<Chat> chats = groupedChats.get(group);
+            List<ChatSummary> chats = groupedChats.get(group);
             if (chats == null || chats.isEmpty()) continue;
 
             // Render group title
@@ -53,7 +59,7 @@ public class ChatList extends Widget {
             currentY += 19; // LINE_HEIGHT
 
             // Render chats in group
-            for (Chat chat : chats) {
+            for (ChatSummary chat : chats) {
                 logicalY = currentY - (int) scrollOffset;
                 if (currentY + 19 < y + scrollOffset) {
                     currentY += 19;
@@ -61,7 +67,7 @@ public class ChatList extends Widget {
                 }
                 if (currentY > y + height + scrollOffset) break;
 
-                boolean isSelected = currentChatId != null && currentChatId.equals(chat.getId());
+                boolean isSelected = currentChatId != null && currentChatId.equals(chat.uuid());
                 boolean isHovered = !scrollbar.isDragging()
                         && mouseY >= logicalY - 6
                         && mouseY < logicalY + 19 - 6
@@ -74,7 +80,7 @@ public class ChatList extends Widget {
                     RenderUtils.drawRect(context, x + 8, currentY - 6, width - 18, 20, 6, bgColor);
                 }
 
-                RenderUtils.drawText(context, TextUtils.trimString(chat.getTitle(), width - 22), x + 12, currentY);
+                RenderUtils.drawText(context, TextUtils.trimString(chat.name() == null ? "null" : chat.name(), width - 22), x + 12, currentY);
                 currentY += 19; // LINE_HEIGHT
             }
 
@@ -87,6 +93,11 @@ public class ChatList extends Widget {
         context.disableScissor();
 
         scrollbar.render(context, mouseX, mouseY);
+    }
+
+    public void onChatClick() {
+        ChatManager.getInstance().loadChat(hoveredChat.uuid());
+        ChatScreen.getInstance().getSidebar().disableFocus();
     }
 
     @Override
@@ -102,7 +113,7 @@ public class ChatList extends Widget {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        return scrollbar.mouseDragged(deltaY, ChatStorage.getInstance().getMaxOffset(), height);
+        return scrollbar.mouseDragged(deltaY, getMaxOffset(), height);
     }
 
     @Override
@@ -112,6 +123,6 @@ public class ChatList extends Widget {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        return scrollbar.mouseScrolled(verticalAmount, ChatStorage.getInstance().getMaxOffset(), height);
+        return scrollbar.mouseScrolled(verticalAmount, getMaxOffset(), height);
     }
 }

@@ -5,7 +5,7 @@ import org.joml.Vector4f;
 import org.skyblockagent.chat.ChatManager;
 import org.skyblockagent.gui.components.Button;
 import org.skyblockagent.gui.components.Widget;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.render.RenderUtils;
 
 public class Header extends Widget {
     private final Button settingsButton = new Button("Settings");
@@ -23,7 +23,7 @@ public class Header extends Widget {
         right -= buttonWidth + 8;
         upgradeButton.init(right - buttonWidth, y + 5, buttonWidth, buttonHeight);
 
-        title = ChatManager.getInstance().getChat().getTitle();
+        title = ChatManager.getInstance().getChat().getName();
         if (title != null) {
             ChatScreen chatScreen = ChatScreen.getInstance();
             titleX = chatScreen.getLeft() + (chatScreen.getChatWidth() / 2);

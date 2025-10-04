@@ -1,78 +1,71 @@
 package org.skyblockagent.chat;
 
 import net.minecraft.util.Pair;
+import org.skyblockagent.network.BackendService;
 
 import java.util.*;
 
 public class ChatGrouper {
-    private static final Map<DateGroup, Long> GROUP_THRESHOLDS = computeThresholds(System.currentTimeMillis());
 
-    public static Pair<Integer, Map<DateGroup, List<Chat>>> groupChats(List<Chat> chats) {
-        Map<DateGroup, List<Chat>> groupedChats = new EnumMap<>(DateGroup.class);
-        int maxOffset = 0;
+    public static Map<DateGroup, List<ChatSummary>> groupChats(List<ChatSummary> chats) {
+        Map<DateGroup, Long> thresholds = computeThresholds(System.currentTimeMillis());
+        Map<DateGroup, List<ChatSummary>> groups = new EnumMap<>(DateGroup.class);
 
-        // Initialize lists for each group
+        // Initialize groups
         for (DateGroup group : DateGroup.values()) {
-            groupedChats.put(group, new ArrayList<>());
+            groups.put(group, new ArrayList<>());
         }
 
         // Group chats
-        for (Chat chat : chats) {
-            DateGroup group = classify(chat.getModifiedAt());
-            groupedChats.get(group).add(chat);
+        for (ChatSummary chat : chats) {
+            DateGroup group = classify(chat.updatedAt(), thresholds);
+            groups.get(group).add(chat);
         }
 
-        // Sort chats within each group by lastModified (descending)
-        for (List<Chat> chatList : groupedChats.values()) {
-            chatList.sort(Comparator.comparing(Chat::getModifiedAt).reversed());
+        // Sort inside each group
+        for (List<ChatSummary> chatList : groups.values()) {
+            chatList.sort(Comparator.comparing(ChatSummary::updatedAt).reversed());
         }
 
-        // Calculate maxOffset
-        for (DateGroup group : DateGroup.values()) {
-            List<Chat> chatList = groupedChats.get(group);
-            if (!chatList.isEmpty()) {
-                maxOffset += 19; // LINE_HEIGHT for group title
-                maxOffset += chatList.size() * 19; // LINE_HEIGHT per chat
-                if (group != DateGroup.OLDER) {
-                    maxOffset += 10; // Extra spacing for non-OLDER groups
-                }
-            }
-        }
-
-        return new Pair<>(maxOffset, groupedChats);
+        return groups;
     }
 
-    private static DateGroup classify(long timestamp) {
-        if (timestamp >= GROUP_THRESHOLDS.get(DateGroup.TODAY)) return DateGroup.TODAY;
-        if (timestamp >= GROUP_THRESHOLDS.get(DateGroup.YESTERDAY)) return DateGroup.YESTERDAY;
-        if (timestamp >= GROUP_THRESHOLDS.get(DateGroup.THIS_WEEK)) return DateGroup.THIS_WEEK;
-        if (timestamp >= GROUP_THRESHOLDS.get(DateGroup.THIS_MONTH)) return DateGroup.THIS_MONTH;
+    private static DateGroup classify(Long timestampSeconds, Map<DateGroup, Long> thresholds) {
+        if (timestampSeconds == null) return DateGroup.OLDER;
+        long tsMillis = timestampSeconds * 1000;
+        if (tsMillis >= thresholds.get(DateGroup.TODAY)) return DateGroup.TODAY;
+        if (tsMillis >= thresholds.get(DateGroup.YESTERDAY)) return DateGroup.YESTERDAY;
+        if (tsMillis >= thresholds.get(DateGroup.THIS_WEEK)) return DateGroup.THIS_WEEK;
+        if (tsMillis >= thresholds.get(DateGroup.THIS_MONTH)) return DateGroup.THIS_MONTH;
         return DateGroup.OLDER;
     }
 
     private static Map<DateGroup, Long> computeThresholds(long nowMillis) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(nowMillis);
-
         Map<DateGroup, Long> thresholds = new EnumMap<>(DateGroup.class);
+        Calendar cal = Calendar.getInstance();
 
         // TODAY
+        cal.setTimeInMillis(nowMillis);
         resetToStartOfDay(cal);
         thresholds.put(DateGroup.TODAY, cal.getTimeInMillis());
 
         // YESTERDAY
-        cal.add(Calendar.DAY_OF_MONTH, -1);
-        thresholds.put(DateGroup.YESTERDAY, cal.getTimeInMillis());
+        Calendar yesterday = (Calendar) cal.clone();
+        yesterday.add(Calendar.DAY_OF_MONTH, -1);
+        thresholds.put(DateGroup.YESTERDAY, yesterday.getTimeInMillis());
 
         // THIS_WEEK
-        cal.set(Calendar.DAY_OF_WEEK, cal.getFirstDayOfWeek());
-        thresholds.put(DateGroup.THIS_WEEK, cal.getTimeInMillis());
+        Calendar week = (Calendar) cal.clone();
+        week.set(Calendar.DAY_OF_WEEK, week.getFirstDayOfWeek());
+        resetToStartOfDay(week);
+        thresholds.put(DateGroup.THIS_WEEK, week.getTimeInMillis());
 
         // THIS_MONTH
-        cal.set(Calendar.DAY_OF_MONTH, 1);
-        thresholds.put(DateGroup.THIS_MONTH, cal.getTimeInMillis());
+        Calendar month = (Calendar) cal.clone();
+        month.set(Calendar.DAY_OF_MONTH, 1);
+        resetToStartOfDay(month);
+        thresholds.put(DateGroup.THIS_MONTH, month.getTimeInMillis());
 
-        // OLDER is implicit
         return thresholds;
     }
 

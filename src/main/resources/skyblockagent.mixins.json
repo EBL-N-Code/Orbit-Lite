@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "org.skyblockagent.mixins",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_25",
   "injectors": {
     "defaultRequire": 1
   },
@@ -14,8 +14,7 @@
     "RenderLayerMixin",
     "ScoreboardMixin",
     "YggdrasilServicesKeyInfoMixin",
-    "ItemStackMixin",
     "accessors.DrawContextAccessor",
-    "accessors.HandledScreenAccessor"
+    "accessors.MinecraftClientAccessor"
   ]
 }

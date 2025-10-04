@@ -1,7 +1,7 @@
 package org.skyblockagent.gui.components;
 
 import net.minecraft.client.gui.DrawContext;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.render.RenderUtils;
 
 public class Button {
     private static final int FILL_COLOR = 0xFF1C1F24;

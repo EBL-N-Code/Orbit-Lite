@@ -1,4 +1,4 @@
-package org.skyblockagent.utils.render;
+package org.skyblockagent.render;
 
 
 import net.minecraft.client.MinecraftClient;

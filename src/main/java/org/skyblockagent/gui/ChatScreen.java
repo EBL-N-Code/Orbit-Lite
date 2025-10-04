@@ -12,7 +12,7 @@ import org.joml.Vector4f;
 import org.skyblockagent.gui.components.Widget;
 import org.skyblockagent.gui.inputBar.InputBar;
 import org.skyblockagent.gui.sidebar.Sidebar;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.render.RenderUtils;
 
 import java.util.Optional;
 

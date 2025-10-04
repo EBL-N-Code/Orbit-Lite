@@ -2,14 +2,14 @@ package org.skyblockagent.gui.components;
 
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.util.math.MathHelper;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.render.RenderUtils;
 
 public class Scrollbar {
     private static final int BAR_WIDTH = 3;
     private static final int MIN_HEIGHT = 8;
     private static final int OFFSET = 5;
-    private final double defaultScrollPcnt;
-    private final float defauttScrollOffset;
+    private final double defaultScrollPercentage;
+    private final float defaultScrollOffset;
     private float x, y;
     private int minY, maxY;
     private int height;
@@ -23,8 +23,8 @@ public class Scrollbar {
     }
 
     public Scrollbar(double scrollPercentage, float scrollOffset) {
-        this.defaultScrollPcnt = scrollPercentage;
-        this.defauttScrollOffset = scrollOffset;
+        this.defaultScrollPercentage = scrollPercentage;
+        this.defaultScrollOffset = scrollOffset;
         this.scrollPercentage = scrollPercentage;
         this.scrollOffset = scrollOffset;
     }
@@ -112,8 +112,8 @@ public class Scrollbar {
     }
 
     public void reset() {
-        scrollPercentage = defaultScrollPcnt;
-        scrollOffset = defauttScrollOffset;
+        scrollPercentage = defaultScrollPercentage;
+        scrollOffset = defaultScrollOffset;
     }
 
     public boolean isHovered(double mouseX, double mouseY) {

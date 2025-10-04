@@ -6,10 +6,10 @@ import org.skyblockagent.chat.ChatManager;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.components.Button;
 import org.skyblockagent.gui.components.Widget;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.render.RenderUtils;
 
 public class Sidebar extends Widget {
-    private static boolean isExpanded = false;
+    private static boolean isExpanded = true;
     private final ExpandButton expandButton = new ExpandButton();
     private final Button chatButton = new Button("+ New chat");
     private final ChatList chatList = new ChatList();
@@ -19,7 +19,7 @@ public class Sidebar extends Widget {
     }
 
     @Override
-    protected void init() {
+    public void init() {
         expandButton.init(x + 4, y + 4);
         chatButton.init(x + 10, y + 35, width - 20, 21);
         int chatListY = y + 35 + 21 + 10;

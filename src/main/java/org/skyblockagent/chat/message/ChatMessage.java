@@ -1,4 +1,4 @@
-package org.skyblockagent.message;
+package org.skyblockagent.chat.message;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -55,15 +55,7 @@ public abstract class ChatMessage {
         return height;
     }
 
-    public long getTimestamp() {
-        return timestamp;
-    }
-
     public Toolbar getToolbar() {
         return toolbar;
-    }
-
-    public boolean isError() {
-        return error;
     }
 }

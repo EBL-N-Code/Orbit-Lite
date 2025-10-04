@@ -1,4 +1,4 @@
-package org.skyblockagent.utils.render;
+package org.skyblockagent.render;
 
 import org.joml.Vector2f;
 import org.joml.Vector4f;

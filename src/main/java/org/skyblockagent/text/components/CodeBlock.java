@@ -9,7 +9,7 @@ import org.skyblockagent.text.BlockParser;
 import org.skyblockagent.text.ParseResult;
 import org.skyblockagent.text.VisualLine;
 import org.skyblockagent.utils.TextUtils;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.render.RenderUtils;
 
 import java.util.ArrayList;
 import java.util.List;

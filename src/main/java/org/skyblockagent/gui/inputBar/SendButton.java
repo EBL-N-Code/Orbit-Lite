@@ -6,8 +6,8 @@ import net.minecraft.util.Identifier;
 import org.skyblockagent.Skyblockagent;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.components.Button;
-import org.skyblockagent.network.Streamer;
-import org.skyblockagent.utils.render.RenderUtils;
+import org.skyblockagent.network.BackendService;
+import org.skyblockagent.render.RenderUtils;
 
 public class SendButton extends Button {
     private static final Identifier ARROW_TEXTURE = Identifier.of(Skyblockagent.NAMESPACE, "textures/ui/arrow.png");
@@ -21,7 +21,8 @@ public class SendButton extends Button {
     public void render(DrawContext context, double mouseX, double mouseY) {
         RenderUtils.drawEllipse(context, x, y, width, height, 0xFFFFFFFF);
 
-        if (Streamer.isActive()) {
+        //Streamer.isActive()
+        if (BackendService.hasActiveCall()) {
             RenderUtils.drawRect(context, x + 5, y + 5, 6, 6, 0, 0xFF000000);
         } else {
             context.drawTexture(RenderLayer::getGuiTextured, ARROW_TEXTURE, x + 4, y + 4, 0, 0, 8, 8, 8, 8);

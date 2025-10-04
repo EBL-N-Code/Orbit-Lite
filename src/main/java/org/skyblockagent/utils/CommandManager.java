@@ -3,22 +3,40 @@ package org.skyblockagent.utils;
 import com.mojang.brigadier.Command;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import org.skyblockagent.chat.ChatManager;
-import org.skyblockagent.chat.ChatStorage;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.text.Text;
 import org.skyblockagent.gui.ChatScreen;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class CommandManager {
+    private static final Map<String, Long> cooldowns = new HashMap<>();
 
     public static void init() {
-        register("chat", ChatScreen::openScreen);
-        register("reset", ChatManager.getInstance()::createChat);
-        register("rebuildIndex", ChatStorage.getInstance()::rebuildIndex);
+        register("chat", ChatScreen::openScreen, 500);
+//        register("reset", ChatManager.getInstance()::createChat, 3000);
+//        register("rebuildIndex", ChatStorage.getInstance()::rebuildIndex, 3000);
     }
 
-    public static void register(String command, Runnable action) {
+    public static void register(String command, Runnable action, long cooldown) {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, _) ->
                 dispatcher.register(ClientCommandManager.literal(command)
                         .executes((_) -> {
+                            long now = System.currentTimeMillis();
+                            long lastUsed = cooldowns.getOrDefault(command, 0L);
+
+                            var player = MinecraftClient.getInstance().player;
+                            if (now - lastUsed < cooldown && player != null) {
+                                long left = (cooldown - (now - lastUsed)) / 1000;
+                                player.sendMessage(
+                                        Text.literal("§cPlease wait " + left + "s before using that command again!"),
+                                        false
+                                );
+                                return 0;
+                            }
+
+                            cooldowns.put(command, now);
                             action.run();
                             return Command.SINGLE_SUCCESS;
                         })));
