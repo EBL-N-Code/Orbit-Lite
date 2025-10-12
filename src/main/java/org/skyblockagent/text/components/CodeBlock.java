@@ -5,11 +5,11 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import org.skyblockagent.render.Renderer;
 import org.skyblockagent.text.BlockParser;
 import org.skyblockagent.text.ParseResult;
 import org.skyblockagent.text.VisualLine;
 import org.skyblockagent.utils.TextUtils;
-import org.skyblockagent.render.RenderUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,11 +27,11 @@ public class CodeBlock implements VisualLine {
 
     @Override
     public void render(DrawContext context, TextRenderer textRenderer, int x, int y) {
-        RenderUtils.drawRect(context, x, y, width, height, 6, 0x80242629);
+        Renderer.drawRect(context, x, y, width, height, 6, 0x80242629);
 
         int lineY = y + PADDING;
         for (MutableText line : lines) {
-            RenderUtils.drawText(context, line, x + PADDING, lineY);
+            Renderer.drawText(context, line, x + PADDING, lineY);
             lineY += textRenderer.fontHeight;
         }
     }

@@ -36,7 +36,7 @@ public class HttpUtils {
      * @param requestBody Body for POST requests (ignored for GET)
      * @param token       Optional bearer token
      */
-    public static CompletableFuture<@Nullable ApiResponse> sendRequest(String url, String method, String requestBody, String token) throws IOException, InterruptedException {
+    public static CompletableFuture<@Nullable ApiResponse> sendRequest(String url, String method, String requestBody, String token) {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .header("Accept", "application/json")
                 .header("Accept-Encoding", "gzip")
@@ -45,13 +45,14 @@ public class HttpUtils {
                 .uri(URI.create(url));
 
         // Choose method
-        if ("POST".equals(method)) {
-            builder = builder
+        builder = switch (method) {
+            case "POST" -> builder
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .header("Content-Type", "application/json");
-        } else if ("GET".equals(method)) {
-            builder = builder.GET();
-        }
+            case "GET" -> builder.GET();
+            case "DELETE" -> builder.DELETE();
+            default -> throw new IllegalStateException("Unexpected request method: " + method);
+        };
 
         // Add token if present
         if (token != null) {
@@ -101,9 +102,9 @@ public class HttpUtils {
                             String string = new String(body.readAllBytes(), StandardCharsets.UTF_8);
                             JsonObject json = JsonParser.parseString(string).getAsJsonObject();
                             String error = json.has("error") ? json.get("error").getAsString() : "Unknown error";
-                            CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error("API error " + status + ": " + error)));
+                            CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error(null, "API error " + status + ": " + error)));
                         } catch (Exception e) {
-                            CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error("API error " + status + " (failed to read body)")));
+                            CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error(null, "API error " + status + " (failed to read body)")));
                         }
                         return;
                     }
@@ -123,21 +124,21 @@ public class HttpUtils {
                                 CLIENT.execute(() -> onEvent.accept(new StreamEvent.Data(json)));
                             }
                         }
-                    } catch (IOException e) {
-                        CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error("Streaming failed: " + e.getMessage())));
+                    } catch (Exception e) {
+                        CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error(e, "Streaming failed: " + e.getMessage())));
                     }
                 })
-                .exceptionally(ex -> {
-                    CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error("Request failed: " + ex.getMessage())));
+                .exceptionally(e -> {
+                    CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error(e, "Request failed: " + e.getMessage())));
                     return null;
                 });
     }
 
-    public static CompletableFuture<@Nullable ApiResponse> sendPostRequest(String url, String requestBody, @Nullable String token) throws IOException, InterruptedException {
+    public static CompletableFuture<@Nullable ApiResponse> sendPostRequest(String url, String requestBody, @Nullable String token) {
         return sendRequest(url, "POST", requestBody, token);
     }
 
-    public static CompletableFuture<@Nullable ApiResponse> sendGetRequest(String url, String token) throws IOException, InterruptedException {
+    public static CompletableFuture<@Nullable ApiResponse> sendGetRequest(String url, String token) {
         return sendRequest(url, "GET", null, token);
     }
 
@@ -147,7 +148,9 @@ public class HttpUtils {
 
     public sealed interface StreamEvent permits StreamEvent.Data, StreamEvent.Error, StreamEvent.Done {
         record Data(String json) implements StreamEvent {}
-        record Error(String error) implements StreamEvent {}
+
+        record Error(Throwable throwable, String error) implements StreamEvent {
+        }
         record Done() implements StreamEvent {}
     }
 }

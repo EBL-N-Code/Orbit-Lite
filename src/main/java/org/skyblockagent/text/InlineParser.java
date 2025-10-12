@@ -39,7 +39,7 @@ public class InlineParser {
             char c = chars[i];
             if (c != '*' && c != '_' && c != '~' && c != '`') continue;
 
-            // Find how long the run of this character is (e.g., * vs ** vs ***)
+            // Find how long the run of this character is (throwable.g., * vs ** vs ***)
             int runStart = i;
             while (i + 1 < chars.length && chars[i + 1] == c) {
                 i++;

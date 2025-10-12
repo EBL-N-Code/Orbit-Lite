@@ -1,26 +1,22 @@
 package org.skyblockagent.chat.message;
 
 import net.minecraft.client.gui.DrawContext;
+import org.skyblockagent.render.Renderer;
 import org.skyblockagent.utils.TextUtils;
-import org.skyblockagent.render.RenderUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class UserMessage extends ChatMessage {
-    private static final int BACKGROUND_COLOR = 0xFF403566;
     private static final float MAX_WIDTH_PERCENTAGE = 2.0f / 3.0f;
     protected final List<String> lines = new ArrayList<>();
     protected List<String> content;
 
     public UserMessage(List<String> content) {
-        super();
         this.content = content;
-        updateDisplay();
     }
 
-    public UserMessage(String content, long timestamp) {
-        super(timestamp);
+    public UserMessage(String content) {
         this.content = List.of(content.split("\n"));
     }
 
@@ -53,11 +49,11 @@ public class UserMessage extends ChatMessage {
     }
 
     public void render(DrawContext context) {
-        RenderUtils.drawRect(context, x, y, width, height - 12, 8, BACKGROUND_COLOR);
+        Renderer.drawRect(context, x, y, width, height - 12, 8, 0xFF403566);
         int lineY = y + 6;
         int lineX = x + 5;
         for (String line : lines) {
-            RenderUtils.drawText(context, line, lineX, lineY);
+            Renderer.drawText(context, line, lineX, lineY);
             lineY += 10;
         }
     }

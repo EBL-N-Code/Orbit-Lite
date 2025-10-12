@@ -4,15 +4,14 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.MutableText;
+import org.skyblockagent.render.Renderer;
 import org.skyblockagent.text.*;
-import org.skyblockagent.render.RenderUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Blockquote implements VisualLine {
     private static final TextRenderer TEXT_RENDERER = MinecraftClient.getInstance().textRenderer;
-    private static final int BAR_COLOR = 0xFF808080;
     private static final int BAR_WIDTH = 2;
     private static final int PADDING_LEFT = 4;
     private final List<MutableText> lines = new ArrayList<>();
@@ -25,12 +24,12 @@ public class Blockquote implements VisualLine {
 
     @Override
     public void render(DrawContext context, TextRenderer textRenderer, int x, int y) {
-        RenderUtils.drawRect(context, x, y - 2, BAR_WIDTH, height + 1, 1, BAR_COLOR);
+        Renderer.drawRect(context, x, y - 2, BAR_WIDTH, height + 1, 1, 0xFF808080);
 
         int lineY = y;
         int textX = x + BAR_WIDTH + PADDING_LEFT;
         for (MutableText line : lines) {
-            RenderUtils.drawText(context, line, textX, lineY);
+            Renderer.drawText(context, line, textX, lineY);
             lineY += textRenderer.fontHeight;
         }
     }

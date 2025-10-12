@@ -5,8 +5,8 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import org.skyblockagent.render.Renderer;
 import org.skyblockagent.text.*;
-import org.skyblockagent.render.RenderUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -152,7 +152,7 @@ public class Table implements VisualLine {
                     default -> currentX + CELL_PADDING;
                 };
 
-                RenderUtils.drawText(context, line, textX, lineY);
+                Renderer.drawText(context, line, textX, lineY);
                 lineY += textRenderer.fontHeight;
             }
             currentX += contentWidth + CELL_PADDING * 2;

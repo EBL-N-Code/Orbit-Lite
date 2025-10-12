@@ -1,7 +1,6 @@
 package org.skyblockagent.utils;
 
 import net.minecraft.client.MinecraftClient;
-import org.skyblockagent.network.ApiAuth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

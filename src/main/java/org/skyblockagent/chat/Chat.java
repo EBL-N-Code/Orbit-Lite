@@ -1,11 +1,11 @@
 package org.skyblockagent.chat;
 
-import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.chat.message.AIMessage;
 import org.skyblockagent.chat.message.ChatMessage;
-import org.skyblockagent.gui.inputBar.InputBar;
-import org.skyblockagent.gui.inputBar.InputState;
+import org.skyblockagent.chat.message.ErrorMessage;
 import org.skyblockagent.chat.message.UserMessage;
+import org.skyblockagent.gui.ChatScreen;
+import org.skyblockagent.gui.inputBar.InputState;
 import org.skyblockagent.network.BackendService;
 
 import java.util.ArrayList;
@@ -35,23 +35,50 @@ public class Chat {
     }
 
     public void send() {
-        InputBar inputBar = ChatScreen.getInstance().getInputBar();
         String prompt = String.join("\n", inputState.getLines());
-        messages.add(new UserMessage(new ArrayList<>(inputState.getLines())));
+        createUserMessage();
         inputState.clear();
-        inputBar.reset();
-        BackendService.sendMessage(this, prompt);
-    }
-
-    public void addAiMessage(AIMessage message) {
-        messages.add(message);
+        BackendService.sendMessage(this, prompt, false);
     }
 
     public void retry() {
-//        if (BackendService.hasActiveCall()) return;
-//        ChatMessage lastMessage = messages.removeLast();
-//        ChatScreen.getInstance().getChatDisplay().addSpace(-(lastMessage.getHeight() + 5));
-//        addAiMessage();
+        if (BackendService.hasActiveCall()) return;
+        removeLastMessage();
+        String prompt = messages.reversed().stream()
+                .filter(msg -> msg instanceof UserMessage)
+                .findFirst()
+                .map(ChatMessage::getContent)
+                .orElse("");
+        BackendService.sendMessage(this, prompt, true);
+    }
+
+    public void createUserMessage() {
+        List<String> content = new ArrayList<>(inputState.getLines());
+        UserMessage message = new UserMessage(content);
+        addMessage(message);
+    }
+
+    public AIMessage createAIMessage() {
+        AIMessage message = new AIMessage();
+        addMessage(message);
+        return message;
+    }
+
+    public void onError(String error) {
+        removeLastMessage();
+        addMessage(new ErrorMessage(error));
+    }
+
+    public void addMessage(ChatMessage message) {
+        messages.add(message);
+        ChatScreen chatScreen = ChatScreen.getInstance();
+        if (chatScreen != null) chatScreen.getChatDisplay().onMessage(message);
+    }
+
+    public void removeLastMessage() {
+        messages.removeLast();
+        ChatScreen chatScreen = ChatScreen.getInstance();
+        if (chatScreen != null) chatScreen.getChatDisplay().calculateOffset();
     }
 
     public InputState getInputState() {

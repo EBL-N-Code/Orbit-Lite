@@ -1,12 +1,11 @@
 package org.skyblockagent.gui.components;
 
 import net.minecraft.client.gui.DrawContext;
-import org.skyblockagent.render.RenderUtils;
+import net.minecraft.client.gui.cursor.StandardCursors;
+import org.skyblockagent.render.Renderer;
 
 public class Button {
-    private static final int FILL_COLOR = 0xFF1C1F24;
-    private static final int OUTLINE_COLOR = 0x80000000;
-    private static final int HOVER_COLOR = 0x15FFFFFF;
+    protected boolean isHovered;
     protected int x, y, width, height;
     private String label;
 
@@ -32,15 +31,21 @@ public class Button {
     }
 
     public void render(DrawContext context, double mouseX, double mouseY) {
-        RenderUtils.drawRect(context, x, y, width, height, 4, FILL_COLOR, 1f, OUTLINE_COLOR);
-        RenderUtils.drawCenteredText(context, label, x + (width / 2), y + (height / 2) - 3);
+        isHovered = mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
+        if (isHovered) context.setCursor(StandardCursors.POINTING_HAND);
+        renderButton(context);
+    }
 
-        if (isHovered(mouseX, mouseY)) {
-            RenderUtils.drawRect(context, x, y, width, height, 4, HOVER_COLOR);
+    public void renderButton(DrawContext context) {
+        Renderer.drawRect(context, x, y, width, height, 4, 0xFF1C1F24, 0x80000000, 1f);
+        Renderer.drawCenteredText(context, label, x + (width / 2), y + (height / 2) - 3);
+
+        if (isHovered) {
+            Renderer.drawRect(context, x, y, width, height, 4, 0x15FFFFFF);
         }
     }
 
-    public boolean isHovered(double mouseX, double mouseY) {
-        return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
+    public boolean isHovered() {
+        return isHovered;
     }
 }

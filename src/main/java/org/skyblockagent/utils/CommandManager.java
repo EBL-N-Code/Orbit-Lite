@@ -15,8 +15,6 @@ public class CommandManager {
 
     public static void init() {
         register("chat", ChatScreen::openScreen, 500);
-//        register("reset", ChatManager.getInstance()::createChat, 3000);
-//        register("rebuildIndex", ChatStorage.getInstance()::rebuildIndex, 3000);
     }
 
     public static void register(String command, Runnable action, long cooldown) {
@@ -28,7 +26,7 @@ public class CommandManager {
 
                             var player = MinecraftClient.getInstance().player;
                             if (now - lastUsed < cooldown && player != null) {
-                                long left = (cooldown - (now - lastUsed)) / 1000;
+                                long left = (long) Math.ceil((cooldown - (now - lastUsed)) / 1000.0);
                                 player.sendMessage(
                                         Text.literal("§cPlease wait " + left + "s before using that command again!"),
                                         false

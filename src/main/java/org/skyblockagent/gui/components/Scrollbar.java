@@ -1,8 +1,9 @@
 package org.skyblockagent.gui.components;
 
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.util.math.MathHelper;
-import org.skyblockagent.render.RenderUtils;
+import org.skyblockagent.render.Renderer;
 
 public class Scrollbar {
     private static final int BAR_WIDTH = 3;
@@ -13,8 +14,8 @@ public class Scrollbar {
     private float x, y;
     private int minY, maxY;
     private int height;
-    private boolean isVisible = false;
-    private boolean isDragging = false;
+    private boolean isVisible;
+    private boolean isDragging;
     private double scrollPercentage;
     private float scrollOffset;
 
@@ -67,14 +68,14 @@ public class Scrollbar {
     public void render(DrawContext context, int mouseX, int mouseY) {
         if (!isVisible) return;
 
-        RenderUtils.drawRect(context, x, y, BAR_WIDTH, height, 2, 0xFF4A5050);
+        Renderer.drawRect(context, (int) x, (int) y, BAR_WIDTH, height, 2, 0xFF4A5050);
         if (isHovered(mouseX, mouseY) || isDragging) {
-            RenderUtils.drawRect(context, x, y, BAR_WIDTH, height, 2, 0x20FFFFFF);
+            Renderer.drawRect(context, (int) x, (int) y, BAR_WIDTH, height, 2, 0x20FFFFFF);
         }
     }
 
-    public boolean mouseClicked(double mouseX, double mouseY) {
-        if (isHovered(mouseX, mouseY)) {
+    public boolean mouseClicked(Click click) {
+        if (isHovered(click.x(), click.y())) {
             isDragging = true;
             return true;
         }

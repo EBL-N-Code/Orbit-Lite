@@ -5,7 +5,12 @@
   "name": "SkyBlockAgent",
   "description": "",
   "authors": [],
-  "contact": {},
+  "contact": {
+    "issues": "https://github.com/yourusername/yourrepo/issues",
+    "sources": "https://github.com/yourusername/yourrepo",
+    "homepage": "https://github.com/yourusername/yourrepo/wiki",
+    "discord": "https://discord.gg/yourinvite"
+  },
   "license": "All-Rights-Reserved",
   "environment": "client",
   "entrypoints": {

@@ -1,15 +1,13 @@
 package org.skyblockagent.gui.inputBar;
 
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import org.skyblockagent.chat.ChatManager;
-import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.components.Widget;
+import org.skyblockagent.network.ApiAuth;
+import org.skyblockagent.render.Renderer;
 import org.skyblockagent.utils.TextUtils;
-import org.skyblockagent.render.RenderUtils;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -19,19 +17,19 @@ import java.util.List;
 public class TextEditor extends Widget {
     private static final int UNDO_STACK_LIMIT = 25;
     private static final long SNAPSHOT_INTERVAL_MS = 500;
+    private final InputBar inputBar;
     private final Deque<InputState> undoStack = new ArrayDeque<>();
     private final Deque<InputState> redoStack = new ArrayDeque<>();
     private long lastSnapshotTime = 0;
-    private InputBar inputBar;
     private InputState inputState;
 
-    public TextEditor() {
-        init();
+    public TextEditor(InputBar inputBar) {
+        this.inputBar = inputBar;
+        this.init();
     }
 
     @Override
     protected void init() {
-        this.inputBar = ChatScreen.getInstance().getInputBar();
         this.inputState = ChatManager.getInstance().getChat().getInputState();
     }
 
@@ -162,6 +160,14 @@ public class TextEditor extends Widget {
         deleteSelection();
     }
 
+    protected void cutSelection() {
+        if (hasSelection()) {
+            snapshot();
+            deleteSelection();
+            inputBar.update();
+        }
+    }
+
     protected CursorPosition getWordSkipPosition(int direction) {
         List<String> lines = getLines();
         CursorPosition cursor = getCursor();
@@ -217,21 +223,26 @@ public class TextEditor extends Widget {
 
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+        if (!ApiAuth.isModActive()) {
+            Renderer.drawText(context, "The mod is unactive! please report this", x, y, 0xFFFF5555, true);
+            return;
+        }
+
         context.enableScissor(x, y, x + width + 8, y + height - 1);
 
-        context.getMatrices().push();
-        context.getMatrices().translate(0, -inputBar.getScrollbar().getScrollOffset(), 0);
+        context.getMatrices().pushMatrix();
+        context.getMatrices().translate(0, -inputBar.getScrollbar().getScrollOffset());
 
         renderText(context, x, y);
         renderCursor(context, x, y);
 
-        context.getMatrices().pop();
+        context.getMatrices().popMatrix();
         context.disableScissor();
     }
 
     protected void renderText(DrawContext context, int x, int y) {
         if (isEmpty()) {
-            RenderUtils.drawText(context, "Ask anything", x, y, 0xA0A0A0, true);
+            Renderer.drawText(context, "Ask anything", x, y, 0xFFA0A0A0, true);
         } else {
             CursorPosition selectionStart = getSelectionStart();
             CursorPosition selectionEnd = getSelectionEnd();
@@ -243,11 +254,6 @@ public class TextEditor extends Widget {
                 String line = lines.get(lineIndex);
                 int lineY = y + lineIndex * InputBar.LINE_HEIGHT;
 
-                context.getMatrices().push();
-                context.getMatrices().translate(0f, 0f, 5f);
-                RenderUtils.drawText(context, line, x, lineY, true);
-                context.getMatrices().pop();
-
                 // Draw selection highlight if needed
                 if (hasSelection() && lineIndex >= selStart.line && lineIndex <= selEnd.line) {
                     int startX = lineIndex == selStart.line ? x + textRenderer.getWidth(line.substring(0, selStart.column)) : x;
@@ -256,6 +262,8 @@ public class TextEditor extends Widget {
 
                     context.fill(startX, lineY - 1, endX, lineY + 9, 0xFF3390FF);
                 }
+
+                Renderer.drawText(context, line, x, lineY, true);
             }
         }
     }
@@ -267,16 +275,16 @@ public class TextEditor extends Widget {
                 List<String> lines = getLines();
                 CursorPosition cursor = getCursor();
                 String line = lines.get(cursor.line);
-                //FIXME: error in this line (Caused by: java.lang.StringIndexOutOfBoundsException: Range [0, -12) out of bounds for length 12)
-                int cursorX = x + textRenderer.getWidth(line.substring(0, Math.min(line.length(), cursor.column)));
+                int column = Math.max(0, Math.min(line.length(), cursor.column));
+                int cursorX = x + textRenderer.getWidth(line.substring(0, column));
                 int cursorY = y + cursor.line * InputBar.LINE_HEIGHT;
 
-                context.fill(RenderLayer.getGuiOverlay(), cursorX, cursorY - 1, cursorX + 1, cursorY + 9, -3092272);
+                context.fill(cursorX, cursorY - 1, cursorX + 1, cursorY + 9, -3092272);
             }
         }
     }
 
-    protected void onClick(CursorPosition clickedPosition, int clickCount) {
+    protected void onClick(CursorPosition clickedPosition, int clickCount, boolean hasShift) {
         if (clickCount == 2) {
             selectWordAt(clickedPosition);
         } else if (clickCount >= 3) {
@@ -286,7 +294,7 @@ public class TextEditor extends Widget {
             setSelectionEnd(selectionEnd);
             setCursorPosition(selectionEnd); // Move cursor to end after triple click
         } else {
-            setCursor(clickedPosition, Screen.hasShiftDown());
+            setCursor(clickedPosition, hasShift);
         }
     }
 
@@ -418,7 +426,7 @@ public class TextEditor extends Widget {
                 String currentLine = lines.get(cursor.line);
                 String after = currentLine.substring(Math.min(cursor.column, currentLine.length()));
                 cursor.line += list.size() - 1;
-                cursor.column = list.getLast().length() - after.length();
+                cursor.column = Math.max(0, list.getLast().length() - after.length());
             }
 
             wrappedLines.addAll(list);
@@ -502,13 +510,10 @@ public class TextEditor extends Widget {
         return !getSelectionStart().equals(getSelectionEnd());
     }
 
-    protected void setCursorToLineStart(boolean shiftDown) {
-        setCursor(new CursorPosition(getCursor().line, 0), shiftDown);
-    }
-
-    protected void setCursorToLineEnd(boolean shiftDown) {
+    protected void setCursorInLine(boolean shiftDown, boolean start) {
         CursorPosition cursor = getCursor();
-        setCursor(new CursorPosition(cursor.line, getLines().get(cursor.line).length()), shiftDown);
+        int column = start ? 0 : getLines().get(cursor.line).length();
+        setCursor(new CursorPosition(cursor.line, column), shiftDown);
     }
 
     private List<String> getLines() {

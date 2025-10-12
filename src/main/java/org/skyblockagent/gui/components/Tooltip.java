@@ -3,7 +3,7 @@ package org.skyblockagent.gui.components;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import org.skyblockagent.render.RenderUtils;
+import org.skyblockagent.render.Renderer;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,17 +26,13 @@ public class Tooltip {
     }
 
     public void render(DrawContext context, int x, int centerY) {
-        context.getMatrices().push();
-        context.getMatrices().translate(0f, 0f, 10f);
-
         int y = centerY - height / 2;
-        RenderUtils.drawRect(context, x, y, width, height, 4, 0xFF141519, 1f, 0xFFA0A0A0);
+        Renderer.drawRect(context, x, y, width, height, 4, 0xFF15151B, 0xFFA0A0A0, .5f);
         int yOffset = y + 3;
         for (Map.Entry<String, String> entry : lines.entrySet()) {
-            RenderUtils.drawText(context, entry.getKey(), x + 3, yOffset, 0xA0A0A0);
-            RenderUtils.drawText(context, entry.getValue(), x + width - 3 - TEXT_RENDERER.getWidth(entry.getValue()), yOffset);
+            Renderer.drawText(context, entry.getKey(), x + 3, yOffset, 0xFFA0A0A0);
+            Renderer.drawText(context, entry.getValue(), x + width - 3 - TEXT_RENDERER.getWidth(entry.getValue()), yOffset);
             yOffset += 10;
         }
-        context.getMatrices().pop();
     }
 }

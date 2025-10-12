@@ -1,8 +1,5 @@
 package org.skyblockagent.chat;
 
-import net.minecraft.util.Pair;
-import org.skyblockagent.network.BackendService;
-
 import java.util.*;
 
 public class ChatGrouper {

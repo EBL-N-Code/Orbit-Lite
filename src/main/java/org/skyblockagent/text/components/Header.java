@@ -5,8 +5,8 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
+import org.skyblockagent.render.Renderer;
 import org.skyblockagent.text.*;
-import org.skyblockagent.render.RenderUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,11 +24,11 @@ public class Header implements VisualLine {
 
     @Override
     public void render(DrawContext context, TextRenderer textRenderer, int x, int y) {
-        context.getMatrices().push();
-        context.getMatrices().translate(x, y, 0);
-        context.getMatrices().scale(this.scale, this.scale, 1.0f);
-        RenderUtils.drawText(context, this.text, 0, 0);
-        context.getMatrices().pop();
+        context.getMatrices().pushMatrix();
+        context.getMatrices().translate(x, y);
+        context.getMatrices().scale(this.scale, this.scale);
+        Renderer.drawText(context, this.text, 0, 0);
+        context.getMatrices().popMatrix();
     }
 
     @Override

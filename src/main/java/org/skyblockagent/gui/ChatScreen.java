@@ -1,6 +1,7 @@
 package org.skyblockagent.gui;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
@@ -12,8 +13,10 @@ import org.joml.Vector4f;
 import org.skyblockagent.gui.components.Widget;
 import org.skyblockagent.gui.inputBar.InputBar;
 import org.skyblockagent.gui.sidebar.Sidebar;
-import org.skyblockagent.render.RenderUtils;
+import org.skyblockagent.render.Renderer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class ChatScreen extends Screen {
@@ -22,6 +25,7 @@ public class ChatScreen extends Screen {
     private static final int CHAT_WIDTH = 520;
     private static final int CHAT_HEIGHT = 320;
     private static final int HEADER_HEIGHT = 25;
+    private final List<Runnable> postRenderQueue = new ArrayList<>();
     private int x, y, menuWidth, menuHeight;
     private Header header;
     private InputBar inputBar;
@@ -33,24 +37,8 @@ public class ChatScreen extends Screen {
         INSTANCE = this;
     }
 
-    @Override
-    protected void init() {
-        menuWidth = Math.min(CHAT_WIDTH, this.width - 24);
-        menuHeight = Math.min(CHAT_HEIGHT, this.height - 12);
-        x = (this.width - menuWidth) / 2;
-        y = (this.height - menuHeight) / 2;
-
-        header = new Header();
-        sidebar = new Sidebar(x, getTop(), (int) (menuWidth * 0.25f), getChatHeight());
-        chatDisplay = new ChatDisplay();
-        inputBar = new InputBar();
-
-        addDrawableChild(header);
-        addDrawableChild(sidebar);
-        addDrawableChild(inputBar);
-        addDrawableChild(chatDisplay);
-
-        initializeDisplay(true, false);
+    public static void updateSidebar() {
+        if (INSTANCE != null) INSTANCE.sidebar.init();
     }
 
     public void initializeDisplay(boolean focusOnBar, boolean resetPosition) {
@@ -66,20 +54,47 @@ public class ChatScreen extends Screen {
         header.init(x, y, menuWidth, HEADER_HEIGHT);
     }
 
-    @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        RenderUtils.drawRect(context, getLeft(), y + HEADER_HEIGHT, getChatWidth(), getChatHeight(), new Vector4f(0f, 8f, 0f, sidebar.isExpanded() ? 0f : 8f), 0xFF141519);
-        super.render(context, mouseX, mouseY, delta);
-
-        // Borders
-        RenderUtils.drawBorder(context, x + 1, y + 1, menuWidth - 2, menuHeight - 2, 7f, 2f, 0x10FFFFFF);
-        context.drawHorizontalLine(x, x + menuWidth - 1, y + 25, 0xFF000000);
-        RenderUtils.drawBorder(context, x, y, menuWidth, menuHeight, 8f, 1f, 0xFF000000);
+    public static void updateDisplay(boolean focusOnBar, boolean resetPosition) {
+        if (INSTANCE != null) INSTANCE.initializeDisplay(focusOnBar, resetPosition);
     }
 
     @Override
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-        renderDarkening(context);
+    protected void init() {
+        INSTANCE = this;
+        menuWidth = Math.min(CHAT_WIDTH, this.width - 24);
+        menuHeight = Math.min(CHAT_HEIGHT, this.height - 12);
+        x = (this.width - menuWidth) / 2;
+        y = (this.height - menuHeight) / 2;
+
+        header = new Header();
+        sidebar = new Sidebar(x, getTop(), (int) (menuWidth * 0.25f), getChatHeight());
+        chatDisplay = new ChatDisplay();
+        inputBar = new InputBar();
+
+        addDrawableChild(sidebar);
+        addDrawableChild(chatDisplay);
+        addDrawableChild(inputBar);
+        addDrawableChild(header);
+
+        initializeDisplay(true, false);
+    }
+
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        Renderer.drawRect(context, getLeft(), y + HEADER_HEIGHT, getChatWidth(), getChatHeight(), new Vector4f(0f, 8f, 0f, sidebar.isExpanded() ? 0f : 8f), 0xFF141519);
+        Renderer.drawRect(context, x, y, menuWidth, HEADER_HEIGHT, new Vector4f(8f, 0f, 8f, 0f), 0xFF1F2227);
+
+        // Borders
+        context.drawHorizontalLine(x, x + menuWidth - 1, y + 25, 0xFF000000);
+        Renderer.drawBorder(context, x + 1, y + 1, menuWidth - 2, menuHeight - 2, 7f, 2f, 0x10FFFFFF);
+        Renderer.drawBorder(context, x, y, menuWidth, menuHeight, 8f, 1f, 0xFF000000);
+
+        super.render(context, mouseX, mouseY, delta);
+
+        for (Runnable task : postRenderQueue) {
+            task.run();
+        }
+        postRenderQueue.clear();
     }
 
     @Override
@@ -88,20 +103,8 @@ public class ChatScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        Optional<Element> optional = this.hoveredElement(mouseX, mouseY);
-        if (optional.isPresent()) {
-            Element element = optional.get();
-            if (element.mouseClicked(mouseX, mouseY, button)) {
-                playDownSound();
-                if (button == 0) this.setDragging(true);
-                if (((Widget) element).shouldFocus()) this.setFocused(element);
-                return true;
-            }
-        }
-
-        setFocused(null);
-        return true;
+    public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+        super.renderDarkening(context);
     }
 
     public void playDownSound() {
@@ -146,12 +149,31 @@ public class ChatScreen extends Screen {
         return inputBar;
     }
 
-    public Sidebar getSidebar() {
-        return sidebar;
+    public void queuePostRender(Runnable renderTask) {
+        postRenderQueue.add(renderTask);
     }
 
-    public static void initDisplay(boolean focusOnBar, boolean resetPosition) {
-        if (INSTANCE != null) INSTANCE.initializeDisplay(focusOnBar, resetPosition);
+    @Override
+    public boolean mouseClicked(Click click, boolean doubled) {
+        if (header.dropdownClicked(click.x(), click.y()) ||
+                (sidebar.isExpanded() && sidebar.getChatList().dropdownClicked(click.x(), click.y()))) {
+            playDownSound();
+            setFocused(null);
+            return true;
+        }
+        Optional<Element> optional = this.hoveredElement(click.x(), click.y());
+        if (optional.isPresent()) {
+            Element element = optional.get();
+            if (element.mouseClicked(click, doubled)) {
+                playDownSound();
+                if (click.button() == 0) this.setDragging(true);
+                if (((Widget) element).shouldFocus()) this.setFocused(element);
+                return true;
+            }
+        }
+
+        setFocused(null);
+        return true;
     }
 
     public static void openScreen() {

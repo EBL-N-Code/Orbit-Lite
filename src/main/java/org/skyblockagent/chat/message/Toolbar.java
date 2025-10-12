@@ -2,16 +2,17 @@ package org.skyblockagent.chat.message;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.gui.cursor.StandardCursors;
 import net.minecraft.util.Identifier;
 import org.skyblockagent.Skyblockagent;
 import org.skyblockagent.chat.ChatManager;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.components.Tooltip;
-import org.skyblockagent.render.RenderUtils;
+import org.skyblockagent.render.Renderer;
 
-import java.util.*;
+import java.util.LinkedHashMap;
 
 public class Toolbar {
     private static final TextRenderer TEXT_RENDERER = MinecraftClient.getInstance().textRenderer;
@@ -28,69 +29,77 @@ public class Toolbar {
     public Toolbar(ChatMessage message) {
         this.message = message;
         boolean isAI = message.getSender() == Sender.AI;
-        x = isAI ? message.getX() : message.getX() + message.getWidth() - ICON_SIZE - 6;
-        y = message.getY() + message.getHeight() - (isAI ? 14 : 8);
+        this.x = isAI ? message.getX() : message.getX() + message.getWidth() - ICON_SIZE - 6;
+        this.y = message.getY() + message.getHeight() - (isAI ? 14 : 8);
         if (isAI) {
-            AIMessage.UsageInfo usageInfo = ((AIMessage) message).getUsage();
-            if (usageInfo != null) {
-                timeText = String.format("%.2f", usageInfo.totalTime() / 1000.0) + "s";
-                textWidth = TEXT_RENDERER.getWidth(timeText) + 6;
-                tooltip = new Tooltip(makeTooltip(usageInfo));
+            if (message instanceof AIMessage aiMessage) {
+                AIMessage.UsageInfo usageInfo = aiMessage.getUsage();
+                if (usageInfo != null) {
+                    timeText = String.format("%.2f", usageInfo.totalTime() / 1000.0) + "s";
+                    textWidth = TEXT_RENDERER.getWidth(timeText) + 6;
+                    tooltip = new Tooltip(makeTooltip(usageInfo));
+                }
             }
         }
     }
 
     public void render(DrawContext context, int mouseX, int mouseY, float scrollOffset, boolean isLast) {
-        boolean isOverBar = ChatScreen.getInstance().getInputBar().isHovered();
-        int x = this.x;
+        boolean isInputBarHovered = ChatScreen.getInstance().getInputBar().isHovered();
+        int currentX = this.x;
+        int offset = 7;
         hoveredIcon = null;
 
-        renderIcon(context, COPY_TEXTURE, x, y, mouseX, mouseY, scrollOffset, isOverBar);
-        x += ICON_SIZE + 7;
+        renderIcon(context, COPY_TEXTURE, currentX, y, mouseX, mouseY, scrollOffset, isInputBarHovered);
+        currentX += ICON_SIZE + offset;
 
         if (isLast) {
-            renderIcon(context, RETRY_TEXTURE, x, y, mouseX, mouseY, scrollOffset, isOverBar);
-            x += ICON_SIZE + 7;
+            renderIcon(context, RETRY_TEXTURE, currentX, y, mouseX, mouseY, scrollOffset, isInputBarHovered);
+            currentX += ICON_SIZE + offset;
         }
 
         if (tooltip != null) {
-            RenderUtils.drawText(context, timeText, x, y, 0xFF808080);
-            if (!isOverBar && isTextHovered(x, y, textWidth, mouseX, mouseY, scrollOffset)) {
-                RenderUtils.drawRect(context, x - 3, y - 3, textWidth, 14, 6, 0x15FFFFFF);
-                tooltip.render(context, x + textWidth, y + 6);
+            Renderer.drawText(context, timeText, currentX, y, 0xFF808080);
+            if (!isInputBarHovered && isTextHovered(currentX, y, textWidth, mouseX, mouseY, scrollOffset)) {
+                Renderer.drawRect(context, currentX - 3, y - 3, textWidth, 14, 6, 0x15FFFFFF);
+                int tooltipX = currentX + textWidth;
+                int tooltipY = y + 6;
+                ChatScreen.getInstance().queuePostRender(() -> {
+                    context.getMatrices().pushMatrix();
+                    context.getMatrices().translate(0, -scrollOffset);
+                    tooltip.render(context, tooltipX, tooltipY);
+                    context.getMatrices().popMatrix();
+                });
             }
         }
     }
 
-    public void renderIcon(DrawContext context, Identifier texture, int x, int y, int mouseX, int mouseY, float scrollOffset, boolean isOverBar) {
-        context.drawTexture(RenderLayer::getGuiTextured, texture, x, y, 0, 0, ICON_SIZE, ICON_SIZE, ICON_SIZE, ICON_SIZE);
-        if (!isOverBar && isIconHovered(x, y, mouseX, mouseY, scrollOffset)) {
-            RenderUtils.drawEllipse(context, x - 3, y - 3, 14, 14, 0x15FFFFFF);
+    public void renderIcon(DrawContext context, Identifier texture, int x, int y, int mouseX, int mouseY, float scrollOffset, boolean isInputBarHovered) {
+        context.drawTexture(RenderPipelines.GUI_TEXTURED, texture, x, y, 0, 0, ICON_SIZE, ICON_SIZE, ICON_SIZE, ICON_SIZE);
+        if (!isInputBarHovered && isIconHovered(x, y, mouseX, mouseY, scrollOffset)) {
+            context.setCursor(StandardCursors.POINTING_HAND);
+            Renderer.drawCircle(context, x - 3, y - 3, 14, 14, 0x15FFFFFF);
             hoveredIcon = texture.getPath();
         }
     }
 
     public boolean mouseClicked() {
-        if (hoveredIcon != null) {
-            ChatScreen.getInstance().playDownSound();
-            if (hoveredIcon.equals(COPY_TEXTURE.getPath())) {
-                MinecraftClient.getInstance().keyboard.setClipboard(message.getContent());
-            } else {
-                ChatManager.getInstance().getChat().retry();
-            }
-            return true;
+        if (hoveredIcon == null) return false;
+        if (hoveredIcon.equals(COPY_TEXTURE.getPath())) {
+            MinecraftClient.getInstance().keyboard.setClipboard(message.getContent());
+        } else if (hoveredIcon.equals(RETRY_TEXTURE.getPath())) {
+            ChatManager.getInstance().getChat().retry();
         }
 
-        return false;
+        return true;
     }
 
     public LinkedHashMap<String, String> makeTooltip(AIMessage.UsageInfo usageInfo) {
-        LinkedHashMap<String, String> lines = new LinkedHashMap<>();
-        lines.put("Prompt tokens:", String.valueOf(usageInfo.promptTokens()));
-        lines.put("Completion tokens:", String.valueOf(usageInfo.completionTokens()));
-        lines.put("Total tokens:", String.valueOf(usageInfo.totalTokens()));
-        lines.put("TPS:", String.format("%.2f", usageInfo.tps()));
-        return lines;
+        LinkedHashMap<String, String> tooltip = new LinkedHashMap<>();
+        tooltip.put("TPS:", String.valueOf(usageInfo.tps()));
+        tooltip.put("Total Tokens:", String.valueOf(usageInfo.totalTokens()));
+        tooltip.put("Completion Tokens:", String.valueOf(usageInfo.completionTokens()));
+        tooltip.put("Prompt Tokens:", String.valueOf(usageInfo.promptTokens()));
+        return tooltip;
     }
 
     public boolean isIconHovered(int x, int y, int mouseX, int mouseY, float scrollOffset) {

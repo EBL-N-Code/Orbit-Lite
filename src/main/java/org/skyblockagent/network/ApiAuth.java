@@ -1,6 +1,5 @@
 package org.skyblockagent.network;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.serialization.Codec;
@@ -24,18 +23,21 @@ import org.skyblockagent.utils.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.security.PrivateKey;
 import java.security.Signature;
-import java.util.*;
+import java.util.Base64;
+import java.util.Objects;
+import java.util.UUID;
+
+import static org.skyblockagent.Skyblockagent.GSON;
 
 public class ApiAuth {
     private static final Logger LOGGER = LoggerFactory.getLogger(ApiAuth.class);
     private static final MinecraftClient CLIENT = MinecraftClient.getInstance();
-    private static final String AUTH_URL = "http://localhost:3000/auth";
     private static final String ALGORITHM = "SHA256withRSA";
     private static final int TOKEN_REFRESH_INTERVAL_TICKS = 300 * 20;
-    private static final Gson GSON = new Gson();
 
     private static int taskId = -1;
     private static boolean isModActive;
@@ -77,7 +79,7 @@ public class ApiAuth {
                 String request = GSON.toJson(TokenRequest.CODEC.encodeStart(JsonOps.INSTANCE, tokenRequest).getOrThrow());
 
                 try {
-                    HttpUtils.sendPostRequest(AUTH_URL, request, null)
+                    HttpUtils.sendPostRequest(BackendService.BACKEND_SERVICE_IP + "/auth", request, null)
                             .thenAccept(response -> CLIENT.execute(() -> {
                                 try {
                                     if (response == null) return;
@@ -96,11 +98,7 @@ public class ApiAuth {
 
                                     if (executedByCmd || !isModActive) {
                                         sendMsgToPlayer(Text.literal(
-                                                "[SkyBlockAI] Successfully Imported Your Data\n" +
-                                                        "Your plan is " + userInfo.plan() + "\n" +
-                                                        "Tokens: " + userInfo.usedTokensToday() + "/" + userInfo.dailyMaxTokens() + "\n" +
-                                                        "You got that plan in " + userInfo.planOwnedAt() + "\n" +
-                                                        "Your plan will expire in " + userInfo.planDuration()
+                                                "[SkyBlockAI] Successfully Imported Your Data"
                                         ).formatted(Formatting.GREEN));
                                     }
                                     executedByCmd = false;
@@ -156,7 +154,6 @@ public class ApiAuth {
         }
     }
 
-    //TODO: move to error handling class
     public static void logErr(String message, Object... logArgs) {
         LOGGER.error(message, logArgs);
         Text text = Text.literal(message).formatted(Formatting.RED);
@@ -165,6 +162,14 @@ public class ApiAuth {
         executedByCmd = false;
         sentErrorOnce = true;
         isModActive = false;
+    }
+
+    public static void logStreamingErr(Throwable e) {
+        LOGGER.error("Caught error while response streaming", e);
+        if (e.getCause() instanceof ConnectException) {
+            sendMsgToPlayer(Text.literal("The mod server is down!").formatted(Formatting.RED));
+            isModActive = false;
+        }
     }
 
     private static void sendMsgToPlayer(Text message) {
@@ -212,15 +217,5 @@ public class ApiAuth {
                             Codecs.BASE_64.fieldOf("signed").forGetter(SignedData::signed))
                     .apply(instance, SignedData::new));
         }
-    }
-
-    public record UserInfo(String plan, long planOwnedAt, Optional<Long> planDuration, int dailyMaxTokens, int usedTokensToday) {
-        public static final Codec<UserInfo> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                Codec.STRING.fieldOf("plan").forGetter(UserInfo::plan),
-                Codec.LONG.fieldOf("plan_owned_at").forGetter(UserInfo::planOwnedAt),
-                Codec.LONG.optionalFieldOf("plan_duration").forGetter(UserInfo::planDuration),
-                Codec.INT.fieldOf("daily_max_tokens").forGetter(UserInfo::dailyMaxTokens),
-                Codec.INT.fieldOf("used_tokens_today").forGetter(UserInfo::usedTokensToday)
-        ).apply(instance, UserInfo::new));
     }
 }

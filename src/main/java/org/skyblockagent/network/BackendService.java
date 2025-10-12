@@ -1,6 +1,5 @@
 package org.skyblockagent.network;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
@@ -8,15 +7,18 @@ import net.minecraft.client.MinecraftClient;
 import org.skyblockagent.chat.*;
 import org.skyblockagent.chat.message.AIMessage;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static org.skyblockagent.Skyblockagent.GSON;
 import static org.skyblockagent.network.ApiAuth.logErr;
 
 public class BackendService {
     private static final MinecraftClient CLIENT = MinecraftClient.getInstance();
-    private static final String API_URL = "http://localhost:3000/api";
-    private static final Gson GSON = new Gson();
+    protected static final String BACKEND_SERVICE_IP = "http://localhost:3000";
     private static Map<DateGroup, List<ChatSummary>> chatSummaries = new HashMap<>();
     private static boolean hasFetchedChats;
     private static boolean activeCall;
@@ -38,7 +40,7 @@ public class BackendService {
 
     protected static void fetchChats() {
         try {
-            HttpUtils.sendGetRequest(API_URL + "/chats", ApiAuth.getToken())
+            HttpUtils.sendGetRequest(BACKEND_SERVICE_IP + "/api/chats", ApiAuth.getToken())
                     .thenAccept(response -> CLIENT.execute(() -> {
                         try {
                             if (response == null) return;
@@ -64,7 +66,7 @@ public class BackendService {
         }
     }
 
-    public static void sendMessage(Chat chat, String prompt) {
+    public static void sendMessage(Chat chat, String prompt, boolean retry) {
         if (prompt.isEmpty()) return;
         try {
             activeCall = true;
@@ -74,10 +76,11 @@ public class BackendService {
             JsonObject request = new JsonObject();
             request.addProperty("chat_uuid", chatUuid);
             request.addProperty("prompt", prompt);
+            if (retry) request.addProperty("retry", true);
 
-            AIMessage aiMessage = new AIMessage(chat);
+            AIMessage aiMessage = chat.createAIMessage();
 
-            HttpUtils.sendStreamingRequest(API_URL + "/chat/completions", GSON.toJson(request), ApiAuth.getToken(), event -> {
+            HttpUtils.sendStreamingRequest(BACKEND_SERVICE_IP + "/api/chat/completions", GSON.toJson(request), ApiAuth.getToken(), event -> {
                 switch (event) {
                     case HttpUtils.StreamEvent.Data data -> {
                         JsonObject json = JsonParser.parseString(data.json()).getAsJsonObject();
@@ -100,6 +103,9 @@ public class BackendService {
                             int promptTokens = usage.get("prompt_tokens").getAsInt();
                             int totalTime = usage.get("total_time").getAsInt();
                             long updatedAt = usage.get("updated_at").getAsLong();
+                            int usedTokensToday = usage.get("used_tokens_today").getAsInt();
+                            UserInfo userInfo = ApiAuth.getUserInfo();
+                            if (userInfo != null) userInfo.setUsedTokensToday(usedTokensToday);
                             aiMessage.setUsage(completionTokens, promptTokens, totalTime);
                             chat.setUpdatedAt(updatedAt);
                             putChatFirst(chat);
@@ -107,7 +113,8 @@ public class BackendService {
                     }
                     case HttpUtils.StreamEvent.Error err -> {
                         activeCall = false;
-                        aiMessage.onError(err.error());
+                        chat.onError(err.error());
+                        ApiAuth.logStreamingErr(err.throwable());
                     }
                     case HttpUtils.StreamEvent.Done _ -> {
                         activeCall = false;
@@ -123,7 +130,7 @@ public class BackendService {
 
     public static CompletableFuture<Chat> fetchChat(String uuid) {
         try {
-            return HttpUtils.sendGetRequest(API_URL + "/chat/" + uuid, ApiAuth.getToken())
+            return HttpUtils.sendGetRequest(BACKEND_SERVICE_IP + "/api/chat/" + uuid, ApiAuth.getToken())
                     .thenApply(response -> {
                         try {
                             if (response == null) return null;
@@ -145,6 +152,30 @@ public class BackendService {
                     });
         } catch (Exception e) {
             logErr("[SkyBlockAI] Failed to fetch chat!", e);
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public static CompletableFuture<Void> deleteChat(String uuid) {
+        try {
+            return HttpUtils.sendRequest(BACKEND_SERVICE_IP + "/api/chat/" + uuid, "DELETE", null, ApiAuth.getToken())
+                    .thenApply(response -> {
+                        try {
+                            if (response == null) return null;
+                            int statusCode = response.statusCode();
+
+                            if (statusCode != 200) {
+                                JsonObject element = JsonParser.parseString(response.body()).getAsJsonObject();
+                                String error = element.has("error") ? element.get("error").getAsString() : "Unknown error";
+                                logErr("[SkyBlockAI] Chat fetch returned " + statusCode + ": " + error);
+                            }
+                        } catch (Exception e) {
+                            logErr("[SkyBlockAI] Failed to delete chat!", e);
+                        }
+                        return null;
+                    });
+        } catch (Exception e) {
+            logErr("[SkyBlockAI] Failed to delete chat!", e);
             return CompletableFuture.completedFuture(null);
         }
     }

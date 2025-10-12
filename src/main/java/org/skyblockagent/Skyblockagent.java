@@ -1,5 +1,6 @@
 package org.skyblockagent;
 
+import com.google.gson.Gson;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -13,7 +14,8 @@ public class Skyblockagent implements ClientModInitializer {
     public static final String NAMESPACE = "skyblockagent";
     public static final ModContainer MOD = FabricLoader.getInstance().getModContainer(NAMESPACE).orElseThrow();
     public static final String VERSION = MOD.getMetadata().getVersion().getFriendlyString();
-    public static final String MINECRAFT_VERSION = SharedConstants.getGameVersion().getName();
+    public static final String MINECRAFT_VERSION = SharedConstants.getGameVersion().name();
+    public static final Gson GSON = new Gson();
 
     @Override
     public void onInitializeClient() {

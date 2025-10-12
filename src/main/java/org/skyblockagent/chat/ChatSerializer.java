@@ -39,10 +39,9 @@ public class ChatSerializer {
             JsonObject obj = json.getAsJsonObject();
             Sender sender = Sender.valueOf(obj.get("sender").getAsString().toUpperCase());
             String content = obj.get("content").getAsString();
-            long timestamp = obj.get("timestamp").getAsLong();
             return switch (sender) {
-                case Sender.USER -> new UserMessage(content, timestamp);
-                case Sender.AI -> new AIMessage(content, timestamp);
+                case Sender.USER -> new UserMessage(content);
+                case Sender.AI -> new AIMessage(content);
             };
         }
     }

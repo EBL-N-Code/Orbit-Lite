@@ -1,19 +1,22 @@
 package org.skyblockagent.gui.inputBar;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.StringHelper;
+import net.minecraft.client.gui.cursor.StandardCursors;
+import net.minecraft.client.input.CharInput;
+import net.minecraft.client.input.KeyInput;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
-import org.lwjgl.glfw.GLFW;
 import org.skyblockagent.chat.ChatManager;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.components.Scrollbar;
 import org.skyblockagent.gui.components.Widget;
+import org.skyblockagent.network.ApiAuth;
 import org.skyblockagent.network.BackendService;
 import org.skyblockagent.network.HttpUtils;
-import org.skyblockagent.render.RenderUtils;
+import org.skyblockagent.render.Renderer;
 
 import java.util.List;
 
@@ -24,15 +27,14 @@ public class InputBar extends Widget {
     private static final int MAX_HEIGHT = LINE_HEIGHT * 5;
     private final SendButton sendButton = new SendButton();
     private final Scrollbar scrollbar = new Scrollbar();
-    protected TextEditor textEditor = new TextEditor();
+    protected TextEditor textEditor = new TextEditor(this);
     protected InputState inputState;
     protected long lastSwitchFocusTime;
     private boolean selectingText = false;
     private boolean dragging = false;
-    private long lastClickTime = 0;
     private int clickCount = 0;
     private int length = 0;
-    private double mouseY;
+    private double mouseYPos;
     private int linesCount;
 
     @Override
@@ -119,17 +121,15 @@ public class InputBar extends Widget {
 
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-        context.getMatrices().push();
-        context.getMatrices().translate(0f, 0f, 5f);
+        boolean cannotSend = isOverLimit() || !ApiAuth.isModActive();
+        int borderColor = cannotSend ? 0xFFFF5555 : 0xFF27292E;
+        Renderer.drawRect(context, x, y, width, height, 8, 0xFF1C1F24, borderColor, 1f);
 
-        int outlineColor = isOverLimit() ? 0xFFFF5555 : 0xFF27292E;
-        RenderUtils.drawRect(context, x, y, width, height, 8, 0xFF1C1F24, 1f, outlineColor);
+        if (isHovered() && !cannotSend) context.setCursor(StandardCursors.IBEAM);
 
         textEditor.renderWidget(context, mouseX, mouseY, deltaTicks);
         sendButton.render(context, mouseX, mouseY);
         scrollbar.render(context, mouseX, mouseY);
-
-        context.getMatrices().pop();
     }
 
     /**
@@ -138,7 +138,7 @@ public class InputBar extends Widget {
      */
     public void autoScroll() {
         if (dragging && textEditor.isFocused() && textEditor.hasSelection() && scrollbar.isVisible()) {
-            int relativeY = (int) (mouseY - y - 8);
+            int relativeY = (int) (mouseYPos - y - 8);
             int maxScroll = getLinesHeight() - MAX_HEIGHT;
             float scrollOffset = scrollbar.getScrollOffset();
 
@@ -156,13 +156,14 @@ public class InputBar extends Widget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(Click click, boolean doubled) {
         this.lastSwitchFocusTime = Util.getMeasuringTimeMs();
 
-        if (scrollbar.mouseClicked(mouseX, mouseY)) return true;
-        if (sendButton.isHovered(mouseX, mouseY)) {
+        if (scrollbar.mouseClicked(click)) return true;
+        if (sendButton.isHovered()) {
             if (canSend()) {
                 ChatManager.getInstance().getChat().send();
+                reset();
             } else if (BackendService.hasActiveCall()) {
                 HttpUtils.interceptStreaming();
             }
@@ -170,11 +171,9 @@ public class InputBar extends Widget {
             return true;
         }
 
-        long currentTime = System.currentTimeMillis();
-        clickCount = currentTime - lastClickTime <= MAX_DOUBLE_CLICK_INTERVAL ? clickCount + 1 : 1;
-        lastClickTime = currentTime;
+        clickCount = doubled ? clickCount + 1 : 1;
         textEditor.setFocused(true);
-        textEditor.onClick(mapMouseToCursor(mouseX, mouseY), clickCount);
+        textEditor.onClick(mapMouseToCursor(click), clickCount, click.hasShift());
         selectingText = true;
         return true;
     }
@@ -191,28 +190,28 @@ public class InputBar extends Widget {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+    public boolean mouseDragged(Click click, double deltaX, double deltaY) {
         if (scrollbar.mouseDragged(deltaY, getLinesHeight(), textEditor.getHeight())) {
             setScrollPercentage(scrollbar.getScrollPercentage());
             return true;
         } else if (textEditor.isFocused() && selectingText) {
-            CursorPosition draggedPosition = mapMouseToCursor(mouseX, mouseY);
+            CursorPosition draggedPosition = mapMouseToCursor(click);
             inputState.setSelectionEnd(draggedPosition);
             inputState.setCursor(draggedPosition);
 
             this.dragging = true;
-            this.mouseY = mouseY;
+            this.mouseYPos = click.y();
             return true;
         }
         return false;
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased(Click click) {
         scrollbar.mouseReleased();
         dragging = false;
         selectingText = false;
-        return super.mouseReleased(mouseX, mouseY, button);
+        return false;
     }
 
     public void reset() {
@@ -224,7 +223,7 @@ public class InputBar extends Widget {
     }
 
     public boolean canSend() {
-        return !textEditor.isEmpty() && !BackendService.hasActiveCall() && !isOverLimit();
+        return !textEditor.isEmpty() && !BackendService.hasActiveCall() && ApiAuth.isModActive() && !isOverLimit();
     }
 
     public boolean isOverLimit() {
@@ -234,14 +233,13 @@ public class InputBar extends Widget {
     /**
      * Converts mouse coordinates to a cursor position within the text editor.
      *
-     * @param mouseX The x-coordinate of the mouse.
-     * @param mouseY The y-coordinate of the mouse.
+     * @param click Mouse click.
      * @return The corresponding cursor position (line and column).
      */
-    private CursorPosition mapMouseToCursor(double mouseX, double mouseY) {
+    private CursorPosition mapMouseToCursor(Click click) {
         List<String> lines = inputState.getLines();
-        int pixelX = MathHelper.floor(mouseX) - x - 8;
-        int pixelY = MathHelper.floor(mouseY) - y - 8 + (int) scrollbar.getScrollOffset() + 2;
+        int pixelX = MathHelper.floor(click.x()) - x - 8;
+        int pixelY = MathHelper.floor(click.y()) - y - 8 + (int) scrollbar.getScrollOffset() + 2;
 
         int line = MathHelper.clamp(pixelY / LINE_HEIGHT, 0, lines.size() - 1);
         String lineText = lines.get(line);
@@ -252,93 +250,77 @@ public class InputBar extends Widget {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyInput input) {
         if (textEditor.isFocused()) {
-            return switch (keyCode) {
-                case 81 -> {
-                    if (Screen.hasControlDown()) {
+            return switch (input.getKeycode()) {
+                case InputUtil.GLFW_KEY_A, InputUtil.GLFW_KEY_Q -> {
+                    if (input.hasCtrl()) {
                         textEditor.setCursor(new CursorPosition(inputState.getLines().size() - 1, inputState.getLines().getLast().length()), false);
                         inputState.setSelectionEnd(new CursorPosition());
                         yield true;
                     }
                     yield false;
                 }
-                case 87 -> {
-                    if (Screen.hasControlDown()) {
+                case InputUtil.GLFW_KEY_Z, InputUtil.GLFW_KEY_W -> {
+                    if (input.hasCtrl()) {
                         textEditor.undo();
                         yield true;
                     }
                     yield false;
                 }
-                case GLFW.GLFW_KEY_Y -> { // Ctrl+Y (Redo)
-                    if (Screen.hasControlDown()) {
+                case InputUtil.GLFW_KEY_Y -> {
+                    if (input.hasCtrl()) {
                         textEditor.redo();
                         yield true;
                     }
                     yield false;
                 }
-                case GLFW.GLFW_KEY_BACKSPACE -> { // Backspace
-                    textEditor.erase(-1, Screen.hasControlDown());
+                case InputUtil.GLFW_KEY_DELETE, InputUtil.GLFW_KEY_BACKSPACE -> {
+                    int direction = input.getKeycode() == InputUtil.GLFW_KEY_DELETE ? 1 : -1;
+                    textEditor.erase(direction, input.hasCtrl());
                     yield true;
                 }
-                case GLFW.GLFW_KEY_DELETE -> { // Delete
-                    textEditor.erase(1, Screen.hasControlDown());
-                    yield true;
-                }
-                case GLFW.GLFW_KEY_RIGHT -> { // Right Arrow
-                    if (Screen.hasControlDown()) {
-                        textEditor.setCursor(textEditor.getWordSkipPosition(1), Screen.hasShiftDown());
-                    } else {
-                        textEditor.moveCursor(1, Screen.hasShiftDown());
+                case InputUtil.GLFW_KEY_RIGHT, InputUtil.GLFW_KEY_LEFT -> {
+                    int direction = input.getKeycode() == InputUtil.GLFW_KEY_RIGHT ? 1 : -1;
+                    switch (input.hasCtrl()) {
+                        case true -> textEditor.setCursor(textEditor.getWordSkipPosition(direction), input.hasShift());
+                        case false -> textEditor.moveCursor(direction, input.hasShift());
                     }
                     yield true;
                 }
-                case GLFW.GLFW_KEY_LEFT -> { // Left Arrow
-                    if (Screen.hasControlDown()) {
-                        textEditor.setCursor(textEditor.getWordSkipPosition(-1), Screen.hasShiftDown());
-                    } else {
-                        textEditor.moveCursor(-1, Screen.hasShiftDown());
-                    }
+                case InputUtil.GLFW_KEY_HOME, InputUtil.GLFW_KEY_END -> {
+                    boolean start = input.getKeycode() == InputUtil.GLFW_KEY_HOME;
+                    textEditor.setCursorInLine(input.hasShift(), start);
                     yield true;
                 }
-                case GLFW.GLFW_KEY_HOME -> { // Home
-                    textEditor.setCursorToLineStart(Screen.hasShiftDown());
+                case InputUtil.GLFW_KEY_UP, InputUtil.GLFW_KEY_DOWN -> {
+                    int direction = input.getKeycode() == InputUtil.GLFW_KEY_UP ? -1 : 1;
+                    textEditor.moveCursorVertical(direction, input.hasShift());
                     yield true;
                 }
-                case GLFW.GLFW_KEY_END -> { // End
-                    textEditor.setCursorToLineEnd(Screen.hasShiftDown());
-                    yield true;
-                }
-                case GLFW.GLFW_KEY_DOWN -> { // Down Arrow
-                    textEditor.moveCursorVertical(1, Screen.hasShiftDown());
-                    yield true;
-                }
-                case GLFW.GLFW_KEY_UP -> { // Up Arrow
-                    textEditor.moveCursorVertical(-1, Screen.hasShiftDown());
-                    yield true;
-                }
-                case GLFW.GLFW_KEY_ENTER -> { // Enter
-                    if (Screen.hasShiftDown()) {
+                case InputUtil.GLFW_KEY_ENTER, InputUtil.GLFW_KEY_KP_ENTER -> {
+                    if (input.hasShift()) {
                         textEditor.insertNewLine();
                         yield true;
                     } else {
                         if (canSend()) {
                             ChatManager.getInstance().getChat().send();
+                            reset();
                             yield true;
                         }
                         yield false;
                     }
                 }
                 default -> {
-                    if (Screen.isCopy(keyCode)) {
+                    if (input.isCopy()) {
                         MinecraftClient.getInstance().keyboard.setClipboard(textEditor.getSelection());
                         yield true;
-                    } else if (Screen.isPaste(keyCode)) {
+                    } else if (input.isPaste()) {
                         textEditor.insertText(MinecraftClient.getInstance().keyboard.getClipboard());
                         yield true;
-                    } else if (Screen.isCut(keyCode)) {
+                    } else if (input.isCut()) {
                         MinecraftClient.getInstance().keyboard.setClipboard(textEditor.getSelection());
-                        textEditor.insertText("");
+                        textEditor.cutSelection();
                         yield true;
                     }
                     yield false;
@@ -349,9 +331,9 @@ public class InputBar extends Widget {
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
-        if (textEditor.isFocused() && StringHelper.isValidChar(chr)) {
-            textEditor.insertText(Character.toString(chr));
+    public boolean charTyped(CharInput input) {
+        if (textEditor.isFocused() && input.isValidChar()) {
+            textEditor.insertText(input.asString());
             return true;
         }
         return false;
