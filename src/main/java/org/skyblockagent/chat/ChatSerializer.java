@@ -27,9 +27,10 @@ public class ChatSerializer {
             JsonObject obj = json.getAsJsonObject();
             String uuid = obj.get("uuid").getAsString();
             String name = obj.get("name").getAsString();
+            String type = obj.get("chat_type").getAsString();
             long updatedAt = obj.get("updated_at").getAsLong();
             List<ChatMessage> messages = context.deserialize(obj.get("messages"), CHAT_MSG_TYPE);
-            return new Chat(uuid, name, updatedAt, messages);
+            return new Chat(uuid, name, type, updatedAt, messages);
         }
     }
 
@@ -41,7 +42,7 @@ public class ChatSerializer {
             String content = obj.get("content").getAsString();
             return switch (sender) {
                 case Sender.USER -> new UserMessage(content);
-                case Sender.AI -> new AIMessage(content);
+                case Sender.ASSISTANT -> new AIMessage(content);
             };
         }
     }

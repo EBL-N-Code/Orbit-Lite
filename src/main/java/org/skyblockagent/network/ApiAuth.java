@@ -36,7 +36,6 @@ import static org.skyblockagent.Skyblockagent.GSON;
 public class ApiAuth {
     private static final Logger LOGGER = LoggerFactory.getLogger(ApiAuth.class);
     private static final MinecraftClient CLIENT = MinecraftClient.getInstance();
-    private static final String ALGORITHM = "SHA256withRSA";
     private static final int TOKEN_REFRESH_INTERVAL_TICKS = 300 * 20;
 
     private static int taskId = -1;
@@ -49,16 +48,19 @@ public class ApiAuth {
     private static UserInfo userInfo;
 
     public static void init() {
-        ClientLifecycleEvents.CLIENT_STARTED.register(_ -> {
-            switch (taskId == -1) {
-                case true -> taskId = Scheduler.getInstance().scheduleCyclic(ApiAuth::updateToken, 0, TOKEN_REFRESH_INTERVAL_TICKS);
-                case false -> Scheduler.getInstance().resetTask(taskId);
+        ClientLifecycleEvents.CLIENT_STARTED.register(ignored -> {
+            if (taskId == -1) {
+                taskId = Scheduler.getInstance().scheduleCyclic(ApiAuth::updateToken, 0, TOKEN_REFRESH_INTERVAL_TICKS);
+            } else {
+                Scheduler.getInstance().resetTask(taskId);
             }
         });
-        ClientPlayConnectionEvents.JOIN.register((_, _, client) -> {
+        ClientPlayConnectionEvents.JOIN.register((ignored, ignored2, client) -> {
             if (statusMessage != null && client.player != null) {
-                client.player.sendMessage(statusMessage, false);
-                statusMessage = null;
+                Scheduler.getInstance().schedule(() -> {
+                    client.player.sendMessage(statusMessage, false);
+                    statusMessage = null;
+                }, 20 * 2);
             }
         });
         CommandManager.register("updateToken", () -> {
@@ -140,7 +142,7 @@ public class ApiAuth {
 
     private static TokenRequest.SignedData getRandomSignedData(PrivateKey privateKey) {
         try {
-            Signature signature = Signature.getInstance(ALGORITHM);
+            Signature signature = Signature.getInstance("SHA256withRSA");
             UUID uuid = UUID.randomUUID();
             ByteBuffer buf = ByteBuffer.allocate(16)
                     .putLong(uuid.getMostSignificantBits())

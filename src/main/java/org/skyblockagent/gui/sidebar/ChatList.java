@@ -94,7 +94,7 @@ public class ChatList extends Widget {
                         && mouseX < x + width - 10;
 
                 if (isHovered || isSelected) {
-                    int bgColor = isHovered ? 0xFF2a2d32 : 0xFF202227;
+                    int bgColor = isHovered ? 0x802a2d32 : 0x80202227;
                     Renderer.drawRect(context, x + 8, currentY - 6, width - 18, 20, 6, bgColor);
 
                     if (isHovered) {

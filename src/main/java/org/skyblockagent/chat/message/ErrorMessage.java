@@ -58,6 +58,6 @@ public class ErrorMessage extends ChatMessage {
 
     @Override
     public Sender getSender() {
-        return Sender.AI;
+        return Sender.ASSISTANT;
     }
 }

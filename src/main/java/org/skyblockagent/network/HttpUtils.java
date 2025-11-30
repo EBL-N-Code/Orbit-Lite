@@ -115,9 +115,14 @@ public class HttpUtils {
                             if (line.startsWith("data: ")) {
                                 String json = line.substring(6).trim();
 
-                                if ("[DONE]".equals(json) || interceptStreaming) {
+                                if (json.startsWith("{\"usage\":")) {
+                                    CLIENT.execute(() -> onEvent.accept(new StreamEvent.Done(json)));
+                                    break;
+                                }
+
+                                if (interceptStreaming || "[DONE]".equals(json)) {
                                     interceptStreaming = false;
-                                    CLIENT.execute(() -> onEvent.accept(new StreamEvent.Done()));
+                                    CLIENT.execute(() -> onEvent.accept(new StreamEvent.Done(null)));
                                     break;
                                 }
 
@@ -148,9 +153,7 @@ public class HttpUtils {
 
     public sealed interface StreamEvent permits StreamEvent.Data, StreamEvent.Error, StreamEvent.Done {
         record Data(String json) implements StreamEvent {}
-
-        record Error(Throwable throwable, String error) implements StreamEvent {
-        }
-        record Done() implements StreamEvent {}
+        record Done(String json) implements StreamEvent {}
+        record Error(Throwable throwable, String error) implements StreamEvent { }
     }
 }

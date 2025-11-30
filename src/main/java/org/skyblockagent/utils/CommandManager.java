@@ -18,9 +18,9 @@ public class CommandManager {
     }
 
     public static void register(String command, Runnable action, long cooldown) {
-        ClientCommandRegistrationCallback.EVENT.register((dispatcher, _) ->
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, ignored) ->
                 dispatcher.register(ClientCommandManager.literal(command)
-                        .executes((_) -> {
+                        .executes((ignored2) -> {
                             long now = System.currentTimeMillis();
                             long lastUsed = cooldowns.getOrDefault(command, 0L);
 

@@ -11,9 +11,11 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import org.joml.Vector4f;
 import org.skyblockagent.gui.components.Widget;
+import org.skyblockagent.gui.header.Header;
 import org.skyblockagent.gui.inputBar.InputBar;
 import org.skyblockagent.gui.sidebar.Sidebar;
 import org.skyblockagent.render.Renderer;
+import org.skyblockagent.utils.ColorUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,27 +39,6 @@ public class ChatScreen extends Screen {
         INSTANCE = this;
     }
 
-    public static void updateSidebar() {
-        if (INSTANCE != null) INSTANCE.sidebar.init();
-    }
-
-    public void initializeDisplay(boolean focusOnBar, boolean resetPosition) {
-        int displayWidth = (int) (getChatWidth() * (sidebar.isExpanded() ? 0.8f : 0.65f));
-        int displayX = getLeft() + (getChatWidth() - displayWidth) / 2;
-        chatDisplay.init(displayX, getTop(), displayWidth, getChatHeight());
-        if (resetPosition) chatDisplay.getScrollbar().reset();
-
-        int barHeight = 10 + (8 * 2);
-        inputBar.init(displayX, getBottom() - barHeight - InputBar.Y_OFFSET, displayWidth, barHeight);
-        if (focusOnBar) setFocused(inputBar);
-
-        header.init(x, y, menuWidth, HEADER_HEIGHT);
-    }
-
-    public static void updateDisplay(boolean focusOnBar, boolean resetPosition) {
-        if (INSTANCE != null) INSTANCE.initializeDisplay(focusOnBar, resetPosition);
-    }
-
     @Override
     protected void init() {
         INSTANCE = this;
@@ -79,10 +60,31 @@ public class ChatScreen extends Screen {
         initializeDisplay(true, false);
     }
 
+    public void initializeDisplay(boolean focusOnBar, boolean resetPosition) {
+        int displayWidth = (int) (getChatWidth() * (sidebar.isExpanded() ? 0.8f : 0.68f));
+        int displayX = getLeft() + (getChatWidth() - displayWidth) / 2;
+        chatDisplay.init(displayX, getTop(), displayWidth, getChatHeight());
+        if (resetPosition) chatDisplay.getScrollbar().reset();
+
+        int barHeight = 10 + (8 * 2);
+        inputBar.init(displayX, getBottom() - barHeight - InputBar.Y_OFFSET, displayWidth, barHeight);
+        if (focusOnBar) setFocused(inputBar);
+
+        header.init(x, y, menuWidth, HEADER_HEIGHT);
+    }
+
+    public static void updateDisplay(boolean focusOnBar, boolean resetPosition) {
+        if (INSTANCE != null) INSTANCE.initializeDisplay(focusOnBar, resetPosition);
+    }
+
+    public static void updateSidebar() {
+        if (INSTANCE != null) INSTANCE.sidebar.init();
+    }
+
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        Renderer.drawRect(context, getLeft(), y + HEADER_HEIGHT, getChatWidth(), getChatHeight(), new Vector4f(0f, 8f, 0f, sidebar.isExpanded() ? 0f : 8f), 0xFF141519);
-        Renderer.drawRect(context, x, y, menuWidth, HEADER_HEIGHT, new Vector4f(8f, 0f, 8f, 0f), 0xFF1F2227);
+        Renderer.drawRect(context, x, y, menuWidth, HEADER_HEIGHT, new Vector4f(8f, 0f, 8f, 0f), ColorUtils.applyBgOpacity(0xFF1F2227));
+        Renderer.drawRect(context, getLeft(), y + HEADER_HEIGHT, getChatWidth(), getChatHeight(), new Vector4f(0f, 8f, 0f, sidebar.isExpanded() ? 0f : 8f), ColorUtils.applyBgOpacity(0xFF141519));
 
         // Borders
         context.drawHorizontalLine(x, x + menuWidth - 1, y + 25, 0xFF000000);

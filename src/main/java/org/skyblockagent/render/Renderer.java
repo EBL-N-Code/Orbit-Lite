@@ -22,7 +22,7 @@ public class Renderer {
     private static final TextRenderer TEXT_RENDERER = MinecraftClient.getInstance().textRenderer;
     private static final StyleSpriteSource FONT = new StyleSpriteSource.Font(Identifier.of(Skyblockagent.NAMESPACE, "custom_font"));
     private static final Style FONT_STYLE = Style.EMPTY.withFont(FONT);
-    public static final int WHITE_COLOR = 0xFFE0E0E0;
+    private static final int WHITE_COLOR = 0xFFD6D6D6;
 
     public static void drawCircle(DrawContext context, int x, int y, int width, int height, int color, int borderColor, float borderThickness) {
         ((DrawContextAccessor) context).getState().addSimpleElement(new CircleShapeRenderState(
@@ -82,7 +82,11 @@ public class Renderer {
         drawText(context, text, x, y, WHITE_COLOR, false);
     }
 
+    public static void drawCenteredText(DrawContext context, String text, int centerX, int y, int color) {
+        drawText(context, text, centerX - TEXT_RENDERER.getWidth(text) / 2, y, color, false);
+    }
+
     public static void drawCenteredText(DrawContext context, String text, int centerX, int y) {
-        drawText(context, text, centerX - TEXT_RENDERER.getWidth(text) / 2, y, WHITE_COLOR, false);
+        drawCenteredText(context, text, centerX, y, WHITE_COLOR);
     }
 }

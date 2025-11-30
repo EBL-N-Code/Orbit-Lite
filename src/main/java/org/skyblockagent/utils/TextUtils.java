@@ -52,7 +52,7 @@ public class TextUtils {
                 maxWidth,
                 EMPTY_STYLE,
                 true,
-                (_, start, end) -> list.add(line.substring(start, end))
+                (ignored, start, end) -> list.add(line.substring(start, end))
         );
         return list;
     }

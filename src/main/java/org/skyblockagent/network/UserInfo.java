@@ -9,60 +9,68 @@ import java.awt.*;
 public class UserInfo {
     public static final Codec<UserInfo> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("plan").forGetter(UserInfo::getPlan),
-            Codec.LONG.fieldOf("plan_owned_at").forGetter(UserInfo::getPlanOwnedAt),
-            Codec.LONG.optionalFieldOf("plan_duration", null).forGetter(UserInfo::getPlanDuration),
-            Codec.INT.fieldOf("daily_max_tokens").forGetter(UserInfo::getDailyMaxTokens),
-            Codec.INT.fieldOf("used_tokens_today").forGetter(UserInfo::getUsedTokensToday)
+            Codec.LONG.fieldOf("plan_color").forGetter(UserInfo::getPlanColor),
+            Codec.LONG.fieldOf("plan_started_at").forGetter(UserInfo::getPlanStartedAt),
+            Codec.LONG.optionalFieldOf("plan_duration", -1L).forGetter(UserInfo::getPlanDuration),
+            Codec.STRING.optionalFieldOf("next_plan", "").forGetter(UserInfo::getNextPlan),
+            Codec.LONG.optionalFieldOf("next_plan_color", -1L).forGetter(UserInfo::getNextPlanColor),
+            Codec.INT.fieldOf("daily_tokens").forGetter(UserInfo::getDailyTokens),
+            Codec.INT.fieldOf("tokens_used_today").forGetter(UserInfo::getTokensUsedToday)
     ).apply(instance, UserInfo::new));
 
     private final String plan;
-    private final long planOwnedAt;
+    private final long planColor;
+    private final long planStartedAt;
     private final Long planDuration;
-    private final int dailyMaxTokens;
-    private int usedTokensToday;
+    private final String nextPlan;
+    private final Long nextPlanColor;
+    private final int dailyTokens;
+    private int tokensUsedToday;
 
-    public UserInfo(String plan, long planOwnedAt, Long planDuration, int dailyMaxTokens, int usedTokensToday) {
+    public UserInfo(String plan, long planColor, long planStartedAt, long planDuration, String nextPlan, Long nextPlanColor, int dailyTokens, int tokensUsedToday) {
         this.plan = plan;
-        this.planOwnedAt = planOwnedAt;
-        this.planDuration = planDuration;
-        this.dailyMaxTokens = dailyMaxTokens;
-        this.usedTokensToday = usedTokensToday;
-    }
-
-    public String getPlanName() {
-        return plan.substring(0, 1).toUpperCase() + plan.substring(1).toLowerCase();
-    }
-
-    public int getPlanColor() {
-        return switch (plan) {
-            case "PLUS" -> new Color(80, 200, 255).getRGB();
-            case "PRO" -> new Color(120, 50, 220).getRGB();
-            default -> new Color(170, 170, 170).getRGB();
-        };
+        this.planColor = planColor;
+        this.planStartedAt = planStartedAt;
+        this.planDuration = planDuration > 0 ? planDuration : null;
+        this.nextPlan = !nextPlan.isEmpty() ? nextPlan : null;
+        this.nextPlanColor = nextPlanColor > 0 ? nextPlanColor : null;
+        this.dailyTokens = dailyTokens;
+        this.tokensUsedToday = tokensUsedToday;
     }
 
     public String getPlan() {
         return plan;
     }
 
-    public long getPlanOwnedAt() {
-        return planOwnedAt;
+    public long getPlanColor() {
+        return planColor;
     }
 
-    @Nullable
-    public Long getPlanDuration() {
+    public long getPlanStartedAt() {
+        return planStartedAt;
+    }
+
+    public @Nullable Long getPlanDuration() {
         return planDuration;
     }
 
-    public int getDailyMaxTokens() {
-        return dailyMaxTokens;
+    public @Nullable String getNextPlan() {
+        return nextPlan;
     }
 
-    public int getUsedTokensToday() {
-        return usedTokensToday;
+    public @Nullable Long getNextPlanColor() {
+        return nextPlanColor;
     }
 
-    public void setUsedTokensToday(int usedTokensToday) {
-        this.usedTokensToday = usedTokensToday;
+    public int getDailyTokens() {
+        return dailyTokens;
+    }
+
+    public int getTokensUsedToday() {
+        return tokensUsedToday;
+    }
+
+    public void addTokens(int tokens) {
+        this.tokensUsedToday += tokens;
     }
 }

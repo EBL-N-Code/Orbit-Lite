@@ -15,6 +15,6 @@ public record StandardLine(MutableText text) implements VisualLine {
 
     @Override
     public int getHeight(TextRenderer textRenderer) {
-        return textRenderer.fontHeight;
+        return textRenderer.fontHeight + 4;
     }
 }

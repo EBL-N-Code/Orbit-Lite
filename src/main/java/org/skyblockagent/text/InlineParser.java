@@ -1,7 +1,6 @@
 package org.skyblockagent.text;
 
 import net.minecraft.text.Style;
-import net.minecraft.util.Formatting;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,12 +8,13 @@ import java.util.List;
 import java.util.Stack;
 
 public class InlineParser {
+    public static final int BOLD_COLOR = 0xFFFFFFFF;
     private static final Style EMPTY_STYLE = Style.EMPTY;
-    private static final Style BOLD_STYLE = EMPTY_STYLE.withBold(true);
+    private static final Style BOLD_STYLE = EMPTY_STYLE.withColor(BOLD_COLOR);
     private static final Style ITALIC_STYLE = EMPTY_STYLE.withItalic(true);
-    private static final Style ITALIC_BOLD_STYLE = ITALIC_STYLE.withBold(true);
+    private static final Style ITALIC_BOLD_STYLE = ITALIC_STYLE.withColor(BOLD_COLOR);
     private static final Style STRIKETHROUGH_STYLE = EMPTY_STYLE.withStrikethrough(true);
-    private static final Style INLINE_STYLE = EMPTY_STYLE.withColor(Formatting.YELLOW);
+    private static final Style INLINE_STYLE = EMPTY_STYLE.withColor(0xFF676767);
 
     /**
      * The main entry point. Orchestrates the three-phase parsing process.

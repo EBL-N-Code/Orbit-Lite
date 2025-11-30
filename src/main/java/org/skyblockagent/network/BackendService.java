@@ -6,11 +6,9 @@ import com.google.gson.reflect.TypeToken;
 import net.minecraft.client.MinecraftClient;
 import org.skyblockagent.chat.*;
 import org.skyblockagent.chat.message.AIMessage;
+import org.skyblockagent.config.ConfigManager;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static org.skyblockagent.Skyblockagent.GSON;
@@ -19,12 +17,13 @@ import static org.skyblockagent.network.ApiAuth.logErr;
 public class BackendService {
     private static final MinecraftClient CLIENT = MinecraftClient.getInstance();
     protected static final String BACKEND_SERVICE_IP = "http://localhost:3000";
-    private static Map<DateGroup, List<ChatSummary>> chatSummaries = new HashMap<>();
+    private static Map<ChatMode, Map<DateGroup, List<ChatSummary>>> chatSummariesByType = new HashMap<>();
     private static boolean hasFetchedChats;
     private static boolean activeCall;
 
     protected static void putChatFirst(Chat chat) {
         String chatUuid = chat.getUuid();
+        Map<DateGroup, List<ChatSummary>> chatSummaries = chatSummariesByType.get(ChatMode.valueOf(chat.getType().toUpperCase()));
         outer:
         for (List<ChatSummary> chatList : chatSummaries.values()) {
             Iterator<ChatSummary> it = chatList.iterator();
@@ -55,8 +54,7 @@ public class BackendService {
                             }
 
                             List<ChatSummary> chats = GSON.fromJson(element.get("chats"), new TypeToken<List<ChatSummary>>(){}.getType());
-                            chatSummaries = ChatGrouper.groupChats(chats);
-                            hasFetchedChats = true;
+                            processChatSummaries(chats);
                         } catch (Exception e) {
                             logErr("[SkyBlockAI] Failed to parse chats!", e);
                         }
@@ -64,6 +62,29 @@ public class BackendService {
         } catch (Exception e) {
             logErr("[SkyBlockAI] Failed to fetch chats!", e);
         }
+    }
+
+    private static void processChatSummaries(List<ChatSummary> chats) {
+        chatSummariesByType = new HashMap<>();
+        for (ChatMode mode : ChatMode.values()) {
+            chatSummariesByType.put(mode, new HashMap<>());
+        }
+
+        Map<ChatMode, List<ChatSummary>> chatsByType = new HashMap<>();
+        for (ChatSummary summary : chats) {
+            try {
+                chatsByType.computeIfAbsent(ChatMode.valueOf(summary.type().toUpperCase()), ignored -> new ArrayList<>()).add(summary);
+            } catch (IllegalArgumentException error) {
+                System.out.println("Unknown chat type " + error);
+            }
+        }
+
+        for (ChatMode mode : ChatMode.values()) {
+            List<ChatSummary> modeChats = chatsByType.getOrDefault(mode, new ArrayList<>());
+            chatSummariesByType.put(mode, ChatGrouper.groupChats(modeChats));
+        }
+
+        hasFetchedChats = true;
     }
 
     public static void sendMessage(Chat chat, String prompt, boolean retry) {
@@ -75,10 +96,11 @@ public class BackendService {
             chatUuid = isNew ? "new" : chatUuid;
             JsonObject request = new JsonObject();
             request.addProperty("chat_uuid", chatUuid);
+            request.addProperty("chat_type", chat.getType());
             request.addProperty("prompt", prompt);
             if (retry) request.addProperty("retry", true);
 
-            AIMessage aiMessage = chat.createAIMessage();
+            AIMessage message = chat.createAIMessage();
 
             HttpUtils.sendStreamingRequest(BACKEND_SERVICE_IP + "/api/chat/completions", GSON.toJson(request), ApiAuth.getToken(), event -> {
                 switch (event) {
@@ -88,27 +110,13 @@ public class BackendService {
                             JsonObject completions = json.getAsJsonObject("completions");
                             if (completions.has("content")) {
                                 String content = completions.get("content").getAsString();
-                                aiMessage.append(content);
+                                message.append(content);
                             }
-                        }
-                        if (isNew && json.has("chat_info")) {
+                        } else if (isNew && json.has("chat_info")) {
                             JsonObject chatInfo = json.getAsJsonObject("chat_info");
                             String uuid = chatInfo.get("uuid").getAsString();
                             String name = chatInfo.get("name").getAsString();
                             chat.init(uuid, name);
-                        }
-                        if (json.has("usage")) {
-                            JsonObject usage = json.getAsJsonObject("usage");
-                            int completionTokens = usage.get("completion_tokens").getAsInt();
-                            int promptTokens = usage.get("prompt_tokens").getAsInt();
-                            int totalTime = usage.get("total_time").getAsInt();
-                            long updatedAt = usage.get("updated_at").getAsLong();
-                            int usedTokensToday = usage.get("used_tokens_today").getAsInt();
-                            UserInfo userInfo = ApiAuth.getUserInfo();
-                            if (userInfo != null) userInfo.setUsedTokensToday(usedTokensToday);
-                            aiMessage.setUsage(completionTokens, promptTokens, totalTime);
-                            chat.setUpdatedAt(updatedAt);
-                            putChatFirst(chat);
                         }
                     }
                     case HttpUtils.StreamEvent.Error err -> {
@@ -116,9 +124,30 @@ public class BackendService {
                         chat.onError(err.error());
                         ApiAuth.logStreamingErr(err.throwable());
                     }
-                    case HttpUtils.StreamEvent.Done _ -> {
+                    case HttpUtils.StreamEvent.Done data -> {
+                        if (data.json() != null) {
+                            JsonObject json = JsonParser.parseString(data.json()).getAsJsonObject();
+                            if (json.has("usage")) {
+                                JsonObject usage = json.getAsJsonObject("usage");
+                                int inputTokens = usage.get("input_tokens").getAsInt();
+                                int outputTokens = usage.get("output_tokens").getAsInt();
+                                int promptTokens = usage.get("prompt_tokens").getAsInt();
+                                int cachedInputTokens = usage.get("cached_input_tokens").getAsInt();
+                                int tokensUsage = usage.get("tokens_usage").getAsInt();
+                                int latency = usage.get("latency_ms").getAsInt();
+                                int tps = latency > 0 ? (int) (outputTokens / (latency / 1000.0)) : 0;
+                                message.setUsage(new AIMessage.UsageInfo(inputTokens, outputTokens,
+                                        promptTokens, cachedInputTokens, tokensUsage, latency, tps));
+
+                                chat.setUpdatedAt(System.currentTimeMillis());
+                                putChatFirst(chat);
+
+                                UserInfo userInfo = ApiAuth.getUserInfo();
+                                if (userInfo != null) userInfo.addTokens(tokensUsage);
+                            }
+                        }
                         activeCall = false;
-                        aiMessage.onFinish();
+                        message.onFinish();
                     }
                 }
             });
@@ -185,7 +214,7 @@ public class BackendService {
     }
 
     public static Map<DateGroup, List<ChatSummary>> getChatSummaries() {
-        return chatSummaries;
+        return chatSummariesByType.getOrDefault(ConfigManager.getState().getChatMode(), new HashMap<>());
     }
 
     public static boolean hasActiveCall() {

@@ -8,6 +8,7 @@ import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.components.Button;
 import org.skyblockagent.gui.components.Widget;
 import org.skyblockagent.render.Renderer;
+import org.skyblockagent.utils.ColorUtils;
 
 public class Sidebar extends Widget {
     private static boolean isExpanded = false;
@@ -36,7 +37,8 @@ public class Sidebar extends Widget {
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         if (isExpanded) {
-            Renderer.drawRect(context, x + 1, y + 1, width - 1, height - 2, new Vector4f(0, 0, 0, 8f), 0xFF141519);
+            int color = ColorUtils.applyBgOpacity(0xFF141519);
+            Renderer.drawRect(context, x + 1, y + 1, width - 1, height - 2, new Vector4f(0, 0, 0, 8f), color);
             Renderer.drawBorder(context, x + 1, y + 1, width - 1, height - 2, new Vector4f(0, 0, 0, 8f), 2, 0x10FFFFFF);
             context.drawVerticalLine(x + width, y, y + height - 1, 0x80000000);
             Renderer.drawCenteredText(context, "Chats", x + (width / 2), y + 10);

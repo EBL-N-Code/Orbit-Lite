@@ -64,17 +64,19 @@ public class Scheduler {
 
             if (currentTick >= task.nextExecutionTick) {
                 try {
-                    switch (task.async) {
-                        case true -> CompletableFuture.runAsync(task.runnable);
-                        case false -> task.runnable.run();
+                    if (task.async) {
+                        CompletableFuture.runAsync(task.runnable);
+                    } else {
+                        task.runnable.run();
                     }
                 } catch (Exception ex) {
                     LOGGER.error("Error Occurred while running a scheduled task: {}", ex.getMessage());
                 }
 
-                switch (task.cyclic) {
-                    case true -> tasks.put(entry.getKey(), task.next(currentTick));
-                    case false -> iterator.remove();
+                if (task.cyclic) {
+                    tasks.put(entry.getKey(), task.next(currentTick));
+                } else {
+                    iterator.remove();
                 }
             }
         }

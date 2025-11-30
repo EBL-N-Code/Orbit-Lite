@@ -4,7 +4,14 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import org.skyblockagent.render.Renderer;
 
-public record ClickableOption(String label, Runnable action) implements DropdownItem {
+public class ClickableOption implements DropdownItem {
+    protected final String label;
+    protected final Runnable action;
+
+    public ClickableOption(String label, Runnable action) {
+        this.label = label;
+        this.action = action;
+    }
 
     @Override
     public void render(DrawContext context, int x, int y, int width, boolean isHovered, TextRenderer textRenderer) {

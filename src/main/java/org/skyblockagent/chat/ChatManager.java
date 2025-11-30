@@ -41,7 +41,7 @@ public class ChatManager {
             BackendService.fetchChat(uuid)
                     .thenAccept(chat -> MinecraftClient.getInstance().execute(() -> {
                         if (chat == null) {
-                            logErr("[SkyBlockAI] Failed to load chat! (chat is null)");
+                            logErr("[SkyBlockAI] Failed to load chat!");
                             return;
                         }
                         this.chat = chat;
@@ -55,9 +55,9 @@ public class ChatManager {
     public void removeChat(String uuid) {
         try {
             BackendService.deleteChat(uuid)
-                    .thenAccept(_ -> MinecraftClient.getInstance().execute(() -> {
+                    .thenAccept(ignored -> MinecraftClient.getInstance().execute(() -> {
                         CACHED_CHATS.remove(uuid);
-                        BackendService.getChatSummaries().forEach((_, summaries) ->
+                        BackendService.getChatSummaries().forEach((ignored2, summaries) ->
                                 summaries.removeIf(summary -> summary.uuid().equals(uuid))
                         );
                         if (chat != null) {

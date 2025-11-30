@@ -17,7 +17,7 @@ public class Dropdown extends Widget {
     private final List<DropdownItem> items;
     private DropdownItem hoveredItem = null;
 
-    private Dropdown(Builder builder) {
+    protected Dropdown(Builder builder) {
         this.identifier = builder.identifier;
         this.items = builder.items;
         this.width = calculateTotalWidth();
@@ -119,6 +119,11 @@ public class Dropdown extends Widget {
         public Builder position(int x, int y) {
             this.x = x;
             this.y = y;
+            return this;
+        }
+
+        public Builder addClickableOption(ClickableOption clickableOption) {
+            this.items.add(clickableOption);
             return this;
         }
 

@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.SharedConstants;
+import org.skyblockagent.config.ConfigManager;
 import org.skyblockagent.network.ApiAuth;
 import org.skyblockagent.utils.CommandManager;
 import org.skyblockagent.utils.Scheduler;
@@ -19,6 +20,7 @@ public class Skyblockagent implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        ConfigManager.load();
         ClientTickEvents.END_CLIENT_TICK.register(Scheduler.getInstance()::tick);
         CommandManager.init();
         ApiAuth.init();

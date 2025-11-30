@@ -35,7 +35,7 @@ public class Table implements VisualLine {
     public void setHeaders(List<String> rawHeaders) {
         this.headers.addAll(rawHeaders.stream()
                 .map(h -> InlineParser.parse(h).stream()
-                        .map(seg -> Text.literal(seg.text()).setStyle(seg.style()))
+                        .map(seg -> Text.literal(seg.text()).setStyle(seg.style().withColor(InlineParser.BOLD_COLOR)))
                         .reduce(Text.empty(), MutableText::append))
                 .toList());
         recalculateLayout();

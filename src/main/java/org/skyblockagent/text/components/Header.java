@@ -33,7 +33,7 @@ public class Header implements VisualLine {
 
     @Override
     public int getHeight(TextRenderer textRenderer) {
-        return (int) (textRenderer.fontHeight * this.scale) + 2;
+        return (int) (textRenderer.fontHeight * this.scale) + 6;
     }
 
     public static class Parser implements BlockParser {
@@ -48,11 +48,12 @@ public class Header implements VisualLine {
 
             int level = headerMatcher.group(1).length();
             String content = headerMatcher.group(2);
+            content = content.replace("**", "");
             float scale = getScaleForLevel(level);
 
             List<InlineParser.StyledSegment> segments = new ArrayList<>();
             for (InlineParser.StyledSegment styledSegment : InlineParser.parse(content)) {
-                segments.add(styledSegment.style().isBold() ? styledSegment : new InlineParser.StyledSegment(content, Style.EMPTY.withBold(true)));
+                segments.add(styledSegment.style().isBold() ? styledSegment : new InlineParser.StyledSegment(content, Style.EMPTY.withColor(InlineParser.BOLD_COLOR)));
             }
 
             List<MutableText> wrappedLines = TextWrapper.wrap(segments, TEXT_RENDERER, (int) (maxWidth / scale));
@@ -74,9 +75,7 @@ public class Header implements VisualLine {
 
         private float getScaleForLevel(int level) {
             return switch (level) {
-                case 1 -> 1.5f;
-                case 2 -> 1.35f;
-                case 3 -> 1.1f;
+                case 1, 2, 3 -> 1.5f;
                 default -> 1f;
             };
         }

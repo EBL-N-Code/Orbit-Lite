@@ -3,11 +3,12 @@ package org.skyblockagent.gui.components;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.cursor.StandardCursors;
 import org.skyblockagent.render.Renderer;
+import org.skyblockagent.utils.ColorUtils;
 
 public class Button {
     protected boolean isHovered;
     protected int x, y, width, height;
-    private String label;
+    protected String label;
 
     public Button(String label) {
         this.label = label;
@@ -37,7 +38,8 @@ public class Button {
     }
 
     public void renderButton(DrawContext context) {
-        Renderer.drawRect(context, x, y, width, height, 4, 0xFF1C1F24, 0x80000000, 1f);
+        int color = ColorUtils.applyBgOpacity(0xFF1C1F24);
+        Renderer.drawRect(context, x, y, width, height, 4, color, 0x80000000, 1f);
         Renderer.drawCenteredText(context, label, x + (width / 2), y + (height / 2) - 3);
 
         if (isHovered) {

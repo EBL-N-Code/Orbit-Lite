@@ -73,21 +73,19 @@ public class AIMessage extends ChatMessage {
         return rawContent.toString();
     }
 
-    public void setUsage(int completionTokens, int promptTokens, int totalTime) {
-        int totalTokens = completionTokens + promptTokens;
-        int tps = totalTime > 0 ? (int) (totalTokens / (totalTime / 1000.0)) : 0;
-        this.usageInfo = new UsageInfo(completionTokens, promptTokens, totalTokens, totalTime, tps);
+    public void setUsage(UsageInfo usageInfo) {
+        this.usageInfo = usageInfo;
     }
 
     @Override
     public Sender getSender() {
-        return Sender.AI;
+        return Sender.ASSISTANT;
     }
 
     public UsageInfo getUsage() {
         return usageInfo;
     }
 
-    public record UsageInfo(int completionTokens, int promptTokens, int totalTokens, int totalTime, int tps) {
+    public record UsageInfo(int inputTokens, int outputTokens, int promptTokens, int cachedInputTokens, int tokensUsage, int latency, int tps) {
     }
 }

@@ -24,7 +24,7 @@ public class Blockquote implements VisualLine {
 
     @Override
     public void render(DrawContext context, TextRenderer textRenderer, int x, int y) {
-        Renderer.drawRect(context, x, y - 2, BAR_WIDTH, height + 1, 1, 0xFF808080);
+        Renderer.drawRect(context, x, y - 2, BAR_WIDTH, height + 1, 1, 0xFF434343);
 
         int lineY = y;
         int textX = x + BAR_WIDTH + PADDING_LEFT;

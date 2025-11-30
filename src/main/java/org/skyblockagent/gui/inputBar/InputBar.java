@@ -282,9 +282,10 @@ public class InputBar extends Widget {
                 }
                 case InputUtil.GLFW_KEY_RIGHT, InputUtil.GLFW_KEY_LEFT -> {
                     int direction = input.getKeycode() == InputUtil.GLFW_KEY_RIGHT ? 1 : -1;
-                    switch (input.hasCtrl()) {
-                        case true -> textEditor.setCursor(textEditor.getWordSkipPosition(direction), input.hasShift());
-                        case false -> textEditor.moveCursor(direction, input.hasShift());
+                    if (input.hasCtrl()) {
+                        textEditor.setCursor(textEditor.getWordSkipPosition(direction), input.hasShift());
+                    } else {
+                        textEditor.moveCursor(direction, input.hasShift());
                     }
                     yield true;
                 }

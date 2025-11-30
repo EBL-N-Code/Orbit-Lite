@@ -28,14 +28,14 @@ public class Toolbar {
 
     public Toolbar(ChatMessage message) {
         this.message = message;
-        boolean isAI = message.getSender() == Sender.AI;
+        boolean isAI = message.getSender() == Sender.ASSISTANT;
         this.x = isAI ? message.getX() : message.getX() + message.getWidth() - ICON_SIZE - 6;
         this.y = message.getY() + message.getHeight() - (isAI ? 14 : 8);
         if (isAI) {
             if (message instanceof AIMessage aiMessage) {
                 AIMessage.UsageInfo usageInfo = aiMessage.getUsage();
                 if (usageInfo != null) {
-                    timeText = String.format("%.2f", usageInfo.totalTime() / 1000.0) + "s";
+                    timeText = String.format("%.2f", usageInfo.latency() / 1000.0) + "s";
                     textWidth = TEXT_RENDERER.getWidth(timeText) + 6;
                     tooltip = new Tooltip(makeTooltip(usageInfo));
                 }
@@ -96,9 +96,11 @@ public class Toolbar {
     public LinkedHashMap<String, String> makeTooltip(AIMessage.UsageInfo usageInfo) {
         LinkedHashMap<String, String> tooltip = new LinkedHashMap<>();
         tooltip.put("TPS:", String.valueOf(usageInfo.tps()));
-        tooltip.put("Total Tokens:", String.valueOf(usageInfo.totalTokens()));
-        tooltip.put("Completion Tokens:", String.valueOf(usageInfo.completionTokens()));
+        tooltip.put("Input Tokens:", String.valueOf(usageInfo.inputTokens()));
+        tooltip.put("Output Tokens:", String.valueOf(usageInfo.outputTokens()));
         tooltip.put("Prompt Tokens:", String.valueOf(usageInfo.promptTokens()));
+        tooltip.put("Cached Input Tokens:", String.valueOf(usageInfo.cachedInputTokens()));
+        tooltip.put("Tokens Usage:", String.valueOf(usageInfo.tokensUsage()));
         return tooltip;
     }
 
