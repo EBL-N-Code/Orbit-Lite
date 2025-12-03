@@ -5,9 +5,9 @@ import com.google.gson.JsonParser;
 import net.minecraft.client.MinecraftClient;
 import org.jetbrains.annotations.Nullable;
 import org.skyblockagent.Skyblockagent;
+import org.skyblockagent.utils.Logger;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -71,13 +71,13 @@ public class HttpUtils {
 
                         String responseBody = new String(body.readAllBytes(), StandardCharsets.UTF_8);
                         return new ApiResponse(response.statusCode(), responseBody);
-                    } catch (IOException e) {
-                        ApiAuth.logErr("Failed while reading http request", e);
+                    } catch (Exception e) {
+                        Logger.error("Failed to send http request", e);
                         return null;
                     }
                 })
                 .exceptionally(ex -> {
-                    ApiAuth.logErr("Failed to send http request", ex);
+                    Logger.error("Failed to send http request", ex);
                     return null;
                 });
     }
@@ -102,9 +102,9 @@ public class HttpUtils {
                             String string = new String(body.readAllBytes(), StandardCharsets.UTF_8);
                             JsonObject json = JsonParser.parseString(string).getAsJsonObject();
                             String error = json.has("error") ? json.get("error").getAsString() : "Unknown error";
-                            CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error(null, "API error " + status + ": " + error)));
+                            CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error(null, error)));
                         } catch (Exception e) {
-                            CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error(null, "API error " + status + " (failed to read body)")));
+                            CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error(null, "API returned " + status + " code: (failed to read body)")));
                         }
                         return;
                     }
@@ -130,11 +130,11 @@ public class HttpUtils {
                             }
                         }
                     } catch (Exception e) {
-                        CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error(e, "Streaming failed: " + e.getMessage())));
+                        CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error(e, "Streaming error: " + e.getMessage())));
                     }
                 })
                 .exceptionally(e -> {
-                    CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error(e, "Request failed: " + e.getMessage())));
+                    CLIENT.execute(() -> onEvent.accept(new StreamEvent.Error(e, "Streaming error: " + e.getMessage())));
                     return null;
                 });
     }

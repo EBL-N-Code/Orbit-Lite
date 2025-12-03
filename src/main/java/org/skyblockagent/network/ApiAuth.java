@@ -1,12 +1,12 @@
 package org.skyblockagent.network;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.session.ProfileKeys;
 import net.minecraft.network.encryption.PlayerKeyPair;
@@ -17,13 +17,12 @@ import net.minecraft.util.Uuids;
 import net.minecraft.util.dynamic.Codecs;
 import org.jetbrains.annotations.Nullable;
 import org.skyblockagent.Skyblockagent;
+import org.skyblockagent.config.ModState;
 import org.skyblockagent.mixins.accessors.MinecraftClientAccessor;
 import org.skyblockagent.utils.CommandManager;
+import org.skyblockagent.utils.Logger;
 import org.skyblockagent.utils.Scheduler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.security.PrivateKey;
 import java.security.Signature;
@@ -34,15 +33,9 @@ import java.util.UUID;
 import static org.skyblockagent.Skyblockagent.GSON;
 
 public class ApiAuth {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ApiAuth.class);
     private static final MinecraftClient CLIENT = MinecraftClient.getInstance();
     private static final int TOKEN_REFRESH_INTERVAL_TICKS = 300 * 20;
-
     private static int taskId = -1;
-    private static boolean isModActive;
-    private static boolean sentErrorOnce;
-    private static boolean executedByCmd;
-    private static Text statusMessage;
 
     private static String token;
     private static UserInfo userInfo;
@@ -55,17 +48,8 @@ public class ApiAuth {
                 Scheduler.getInstance().resetTask(taskId);
             }
         });
-        ClientPlayConnectionEvents.JOIN.register((ignored, ignored2, client) -> {
-            if (statusMessage != null && client.player != null) {
-                Scheduler.getInstance().schedule(() -> {
-                    client.player.sendMessage(statusMessage, false);
-                    statusMessage = null;
-                }, 20 * 2);
-            }
-        });
         CommandManager.register("updateToken", () -> {
             Scheduler.getInstance().resetTask(taskId);
-            executedByCmd = true;
             updateToken();
         }, 3000);
     }
@@ -74,51 +58,60 @@ public class ApiAuth {
         ProfileKeys profileKeys = ((MinecraftClientAccessor) CLIENT).getProfileKeys();
         profileKeys.fetchKeyPair().thenAcceptAsync(playerKeypairOpt -> {
             boolean expired = playerKeypairOpt.map(keyPair -> keyPair.publicKey().data().isExpired()).orElse(false);
-            if (playerKeypairOpt.isPresent() && !expired) {
-                TokenRequest tokenRequest = createTokenRequest(playerKeypairOpt.get());
-                if (tokenRequest == null) return;
-
-                String request = GSON.toJson(TokenRequest.CODEC.encodeStart(JsonOps.INSTANCE, tokenRequest).getOrThrow());
-
-                try {
-                    HttpUtils.sendPostRequest(BackendService.BACKEND_SERVICE_IP + "/auth", request, null)
-                            .thenAccept(response -> CLIENT.execute(() -> {
-                                try {
-                                    if (response == null) return;
-                                    int statusCode = response.statusCode();
-                                    String body = response.body();
-                                    JsonObject element = JsonParser.parseString(body).getAsJsonObject();
-
-                                    if (statusCode != 200) {
-                                        String error = element.has("error") ? element.get("error").getAsString() : "Unknown error";
-                                        logErr("[SkyBlockAI] API Request returned " + statusCode + ": " + error);
-                                        return;
-                                    }
-
-                                    token = element.get("token").getAsString();
-                                    userInfo = UserInfo.CODEC.parse(JsonOps.INSTANCE, element.get("user_info")).getOrThrow();
-
-                                    if (executedByCmd || !isModActive) {
-                                        sendMsgToPlayer(Text.literal(
-                                                "[SkyBlockAI] Successfully Imported Your Data"
-                                        ).formatted(Formatting.GREEN));
-                                    }
-                                    executedByCmd = false;
-                                    sentErrorOnce = false;
-                                    isModActive = true;
-                                    if (!BackendService.hasFetchedChats()) BackendService.fetchChats();
-                                } catch (Exception e) {
-                                    logErr("[SkyBlockAI] Failed to refresh the api token!", e);
-                                }
-                            }));
-                } catch (Exception e) {
-                    logErr("[SkyBlockAI] Failed to refresh the api token!", e);
-                }
-            } else {
-                logErr("[SkyBlockAI] Failed to fetch profile keys!");
+            if (playerKeypairOpt.isEmpty() || expired) {
+                Logger.error("Failed to refresh the API token!", new IllegalStateException("Profile keys missing or expired"), true);
+                return;
             }
-        }).exceptionally(throwable -> {
-            logErr("[SkyBlockAI] Encountered an unexpected exception while refreshing the api token!", throwable);
+
+            TokenRequest tokenRequest = Objects.requireNonNull(createTokenRequest(playerKeypairOpt.get()));
+            String request = GSON.toJson(TokenRequest.CODEC.encodeStart(JsonOps.INSTANCE, tokenRequest).getOrThrow());
+
+            try {
+                HttpUtils.sendPostRequest(BackendService.BACKEND_SERVICE_IP + "/auth", request, null)
+                        .thenAccept(response -> CLIENT.execute(() -> {
+                            try {
+                                if (response == null) throw new NullPointerException("Failed to get a response");
+                                int statusCode = response.statusCode();
+                                String body = response.body();
+                                JsonObject element = JsonParser.parseString(body).getAsJsonObject();
+
+                                if (statusCode != 200) {
+                                    String error = element.has("error") ? element.get("error").getAsString() : "Unknown error";
+                                    throw new RuntimeException("API returned " + statusCode + " code: " + error);
+                                }
+
+                                token = element.get("token").getAsString();
+                                userInfo = UserInfo.CODEC.parse(JsonOps.INSTANCE, element.get("user_info")).getOrThrow();
+
+                                JsonElement maintenanceElement = element.get("maintenance");
+                                boolean maintenance = maintenanceElement != null && maintenanceElement.getAsBoolean();
+
+                                if (ModState.isDisabled()) {
+                                    ModState.enableMod();
+                                    boolean maintenanceFinished = ModState.isUnderMaintenance() && !maintenance;
+                                    String text = "Successfully Imported Your Data!" +
+                                            (maintenanceFinished ? " Maintenance is finished!" : "");
+                                    Logger.sendToPlayer(Text.literal(text).formatted(Formatting.GREEN));
+                                }
+
+                                ModState.setUnderMaintenance(maintenance);
+                                if (maintenance) ModState.disableMod();
+
+                                JsonElement notification = element.get("notification");
+                                if (notification != null) {
+                                    Logger.sendToPlayer(Text.of(notification.getAsString()));
+                                }
+
+                                BackendService.fetchChats();
+                            } catch (Exception e) {
+                                Logger.error("Failed to refresh the API token!", e, true);
+                            }
+                        }));
+            } catch (Exception e) {
+                Logger.error("Failed to refresh the API token!", e, true);
+            }
+        }).exceptionally(e -> {
+            Logger.error("Failed to refresh the API token!", e, true);
             return null;
         });
     }
@@ -130,12 +123,13 @@ public class ApiAuth {
             String publicKey = Base64.getEncoder().encodeToString(publicKeyData.key().getEncoded());
             byte[] publicKeySignature = publicKeyData.keySignature();
             long expiresAt = publicKeyData.expiresAt().toEpochMilli();
+
             TokenRequest.KeyPairInfo keyPairInfo = new TokenRequest.KeyPairInfo(sessionUUID, publicKey, publicKeySignature, expiresAt);
-            TokenRequest.SignedData signedData = getRandomSignedData(playerKeyPair.privateKey());
-            if (signedData == null) return null;
+            TokenRequest.SignedData signedData = Objects.requireNonNull(getRandomSignedData(playerKeyPair.privateKey()));
+
             return new TokenRequest(keyPairInfo, signedData, Skyblockagent.MINECRAFT_VERSION, Skyblockagent.VERSION);
         } catch (Exception e) {
-            logErr("[SkyBlockAI] Failed to create Token Request!", e);
+            Logger.error("Failed to create Token Request!", e);
             return null;
         }
     }
@@ -151,49 +145,17 @@ public class ApiAuth {
             signature.update(buf.array());
             return new TokenRequest.SignedData(buf.array(), signature.sign());
         } catch (Exception e) {
-            logErr("[SkyBlockAI] Failed to sign random data!", e);
+            Logger.error("Failed to sign random data!", e);
             return null;
         }
     }
 
-    public static void logErr(String message, Object... logArgs) {
-        LOGGER.error(message, logArgs);
-        Text text = Text.literal(message).formatted(Formatting.RED);
-
-        if (executedByCmd || isModActive || !sentErrorOnce) sendMsgToPlayer(text);
-        executedByCmd = false;
-        sentErrorOnce = true;
-        isModActive = false;
-    }
-
-    public static void logStreamingErr(Throwable e) {
-        LOGGER.error("Caught error while response streaming", e);
-        if (e.getCause() instanceof ConnectException) {
-            sendMsgToPlayer(Text.literal("The mod server is down!").formatted(Formatting.RED));
-            isModActive = false;
-        }
-    }
-
-    private static void sendMsgToPlayer(Text message) {
-        if (CLIENT.player != null) {
-            CLIENT.player.sendMessage(message, false);
-            return;
-        }
-        statusMessage = message;
-    }
-
-    @Nullable
-    public static String getToken() {
+    public static @Nullable String getToken() {
         return token;
     }
 
-    @Nullable
-    public static UserInfo getUserInfo() {
+    public static @Nullable UserInfo getUserInfo() {
         return userInfo;
-    }
-
-    public static boolean isModActive() {
-        return isModActive;
     }
 
     private record TokenRequest(KeyPairInfo keyPairInfo, SignedData signedData, String minecraftVersion, String modVersion) {

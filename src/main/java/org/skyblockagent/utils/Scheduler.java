@@ -69,8 +69,8 @@ public class Scheduler {
                     } else {
                         task.runnable.run();
                     }
-                } catch (Exception ex) {
-                    LOGGER.error("Error Occurred while running a scheduled task: {}", ex.getMessage());
+                } catch (Exception e) {
+                    LOGGER.error("Error Occurred while running a scheduled task: {}", e.getMessage());
                 }
 
                 if (task.cyclic) {

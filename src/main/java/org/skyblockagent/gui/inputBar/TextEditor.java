@@ -4,8 +4,8 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import org.skyblockagent.chat.ChatManager;
+import org.skyblockagent.config.ModState;
 import org.skyblockagent.gui.components.Widget;
-import org.skyblockagent.network.ApiAuth;
 import org.skyblockagent.render.Renderer;
 import org.skyblockagent.utils.TextUtils;
 
@@ -223,7 +223,12 @@ public class TextEditor extends Widget {
 
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-        if (!ApiAuth.isModActive()) {
+        if (ModState.isUnderMaintenance()) {
+            Renderer.drawText(context, "The mod is under maintenance!", x, y, 0xFFFF5555, true);
+            return;
+        }
+
+        if (ModState.isDisabled()) {
             Renderer.drawText(context, "The mod is unactive! please report this", x, y, 0xFFFF5555, true);
             return;
         }

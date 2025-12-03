@@ -10,10 +10,10 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import org.skyblockagent.chat.ChatManager;
+import org.skyblockagent.config.ModState;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.gui.components.Scrollbar;
 import org.skyblockagent.gui.components.Widget;
-import org.skyblockagent.network.ApiAuth;
 import org.skyblockagent.network.BackendService;
 import org.skyblockagent.network.HttpUtils;
 import org.skyblockagent.render.Renderer;
@@ -121,7 +121,7 @@ public class InputBar extends Widget {
 
     @Override
     protected void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-        boolean cannotSend = isOverLimit() || !ApiAuth.isModActive();
+        boolean cannotSend = isOverLimit() || ModState.isDisabled();
         int borderColor = cannotSend ? 0xFFFF5555 : 0xFF27292E;
         Renderer.drawRect(context, x, y, width, height, 8, 0xFF1C1F24, borderColor, 1f);
 
@@ -223,7 +223,7 @@ public class InputBar extends Widget {
     }
 
     public boolean canSend() {
-        return !textEditor.isEmpty() && !BackendService.hasActiveCall() && ApiAuth.isModActive() && !isOverLimit();
+        return !textEditor.isEmpty() && !BackendService.hasActiveCall() && !ModState.isDisabled() && !isOverLimit();
     }
 
     public boolean isOverLimit() {

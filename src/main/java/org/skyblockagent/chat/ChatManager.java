@@ -3,12 +3,11 @@ package org.skyblockagent.chat;
 import net.minecraft.client.MinecraftClient;
 import org.skyblockagent.gui.ChatScreen;
 import org.skyblockagent.network.BackendService;
+import org.skyblockagent.utils.Logger;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.skyblockagent.network.ApiAuth.logErr;
 
 public class ChatManager {
     private final static ChatManager INSTANCE = new ChatManager();
@@ -41,14 +40,14 @@ public class ChatManager {
             BackendService.fetchChat(uuid)
                     .thenAccept(chat -> MinecraftClient.getInstance().execute(() -> {
                         if (chat == null) {
-                            logErr("[SkyBlockAI] Failed to load chat!");
+                            Logger.error("Failed to load chat!");
                             return;
                         }
                         this.chat = chat;
                         ChatScreen.updateDisplay(true, true);
                     }));
         } catch (Exception e) {
-            logErr("[SkyBlockAI] Failed to load chat!", e);
+            Logger.error("Failed to load chat!", e);
         }
     }
 
@@ -69,7 +68,7 @@ public class ChatManager {
                         ChatScreen.updateSidebar();
                     }));
         } catch (Exception e) {
-            logErr("[SkyBlockAI] Failed to delete chat!", e);
+            Logger.error("Failed to delete chat!", e);
         }
     }
 

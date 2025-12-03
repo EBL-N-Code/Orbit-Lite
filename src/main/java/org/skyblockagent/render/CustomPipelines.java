@@ -9,7 +9,6 @@ import net.minecraft.util.Identifier;
 import org.skyblockagent.Skyblockagent;
 
 public class CustomPipelines {
-
     public static final RenderPipeline RECT_PIPELINE = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.TRANSFORMS_AND_PROJECTION_SNIPPET)
             .withBlend(BlendFunction.TRANSLUCENT)
             .withVertexFormat(VertexFormat.builder()
