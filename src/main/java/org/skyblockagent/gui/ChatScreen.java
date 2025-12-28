@@ -157,8 +157,7 @@ public class ChatScreen extends Screen {
 
     @Override
     public boolean mouseClicked(Click click, boolean doubled) {
-        if (header.dropdownClicked(click.x(), click.y()) ||
-                (sidebar.isExpanded() && sidebar.getChatList().dropdownClicked(click.x(), click.y()))) {
+        if (header.dropdownClicked() || (sidebar.isExpanded() && sidebar.getChatList().dropdownClicked(click.x(), click.y()))) {
             playDownSound();
             setFocused(null);
             return true;
