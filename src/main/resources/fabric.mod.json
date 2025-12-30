@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "id": "skyblockagent",
+  "id": "apex",
   "version": "${version}",
-  "name": "SkyBlockAgent",
+  "name": "Apex",
   "description": "",
-  "authors": [],
+  "authors": ["7azem_"],
   "contact": {
     "issues": "https://github.com/yourusername/yourrepo/issues",
     "sources": "https://github.com/yourusername/yourrepo",
@@ -15,15 +15,16 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "org.skyblockagent.Skyblockagent"
+      "org.apex.Apex"
     ]
   },
   "mixins": [
-    "skyblockagent.mixins.json"
+    "apex.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=${loader_version}",
-    "fabric": "*",
-    "minecraft": "${minecraft_version}"
+    "fabric-api": ">=${fabric_version}",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=21"
   }
 }
