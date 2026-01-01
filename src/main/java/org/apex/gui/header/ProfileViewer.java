@@ -1,5 +1,6 @@
 package org.apex.gui.header;
 
+import com.google.gson.JsonObject;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.ContactInformation;
 import net.minecraft.client.MinecraftClient;
@@ -23,9 +24,11 @@ import org.apex.gui.components.Selector;
 import org.apex.gui.components.dropdown.ClickableOption;
 import org.apex.gui.components.dropdown.Dropdown;
 import org.apex.network.ApiAuth;
+import org.apex.network.HttpUtils;
 import org.apex.network.UserInfo;
 import org.apex.render.Renderer;
 import org.apex.utils.ColorUtils;
+import org.apex.utils.Logger;
 import org.apex.utils.TextUtils;
 
 import java.util.Optional;
@@ -145,10 +148,9 @@ public class ProfileViewer extends Selector {
         dropdown = builder
                 .addSeparator()
                 .addOption("Report a Bug", () -> contact.get("issues").ifPresent(url -> ConfirmLinkScreen.open(screen, url)))
-                .addOption("Help/FAQ", () -> contact.get("homepage").ifPresent(url -> ConfirmLinkScreen.open(screen, url)))
-                .addOption("Changelog/Releases", () -> contact.get("sources").ifPresent(url -> ConfirmLinkScreen.open(screen, url)))
-                .addOption("Join Discord Server", () -> contact.get("discord").ifPresent(url -> ConfirmLinkScreen.open(screen, url)))
-                .addOption("GitHub Repository", () -> contact.get("sources").ifPresent(url -> ConfirmLinkScreen.open(screen, url)))
+                .addOption("Website", () -> contact.get("homepage").ifPresent(url -> ConfirmLinkScreen.open(screen, url)))
+                .addOption("Releases", () -> contact.get("modrinth").ifPresent(url -> ConfirmLinkScreen.open(screen, url)))
+                .addOption("Discord Server", () -> contact.get("issues").ifPresent(url -> ConfirmLinkScreen.open(screen, url)))
                 .build();
     }
 
@@ -157,8 +159,23 @@ public class ProfileViewer extends Selector {
         private final int color;
 
         public UpgradeOption(String label, int color) {
-            super(label, () -> ConfirmLinkScreen.open(ChatScreen.getInstance(), Constants.UPGRADE_URL));
+            super(label, UpgradeOption::click);
             this.color = color;
+        }
+
+        private static void click() {
+            ConfirmLinkScreen.open(ChatScreen.getInstance(), Constants.UPGRADE_URL);
+            String username = MinecraftClient.getInstance().getSession().getUsername();
+
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("username", username);
+            String request = requestBody.toString();
+
+            try {
+                HttpUtils.sendPostRequest(Constants.SERVER_IP + "/interest", request, null);
+            } catch (Exception e) {
+                Logger.error("Failed to send interest!", e);
+            }
         }
 
         @Override

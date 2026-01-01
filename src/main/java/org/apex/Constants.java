@@ -5,8 +5,8 @@ import net.minecraft.util.Formatting;
 
 public class Constants {
     public static final Text PREFIX = Text.literal("[").formatted(Formatting.DARK_AQUA).append(Text.literal(Apex.MOD_NAME).formatted(Formatting.AQUA)).append(Text.literal("] ").formatted(Formatting.DARK_AQUA));
-    public static final String UPGRADE_URL = "";
-    public static final String SERVER_IP = "http://localhost:3000";
+    public static final String UPGRADE_URL = "https://apexmod.tech/";
+    public static final String SERVER_IP = "https://api.apexmod.tech";
 
     public static final Text IMPORT_FAILED = Text.literal("Failed to import your data.").formatted(Formatting.RED);
     public static final Text REPORT_ISSUE = Text.literal("Please report this issue.").formatted(Formatting.RED);
