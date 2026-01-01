@@ -98,7 +98,7 @@ public class Toolbar {
         tooltip.put("TPS:", String.valueOf(usageInfo.tps()));
         tooltip.put("Input Tokens:", String.valueOf(usageInfo.inputTokens()));
         tooltip.put("Output Tokens:", String.valueOf(usageInfo.outputTokens()));
-        tooltip.put("Prompt Tokens:", String.valueOf(usageInfo.promptTokens()));
+//        tooltip.put("Prompt Tokens:", String.valueOf(usageInfo.promptTokens()));
         tooltip.put("Cached Tokens:", String.valueOf(usageInfo.cachedTokens()));
         tooltip.put("Tokens Usage:", String.valueOf(usageInfo.tokensUsage()));
         return tooltip;

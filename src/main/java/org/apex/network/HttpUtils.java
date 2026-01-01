@@ -142,6 +142,7 @@ public class HttpUtils {
     }
 
     public static void interceptStreaming() {
+        BackendService.activeCall = false;
         if (streamingFuture != null) {
             streamingFuture.cancel(true);
             streamingFuture = null;

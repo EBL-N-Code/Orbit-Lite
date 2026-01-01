@@ -17,7 +17,7 @@ import static org.apex.Apex.GSON;
 public class BackendService {
     private static Map<DateGroup, List<ChatSummary>> chatSummariesByDate = new HashMap<>();
     private static boolean hasFetchedChats;
-    private static boolean activeCall;
+    public static boolean activeCall;
 
     protected static void putChatFirst(Chat chat) {
         String chatUuid = chat.getUuid();
