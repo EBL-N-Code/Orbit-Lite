@@ -5,9 +5,11 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.ScreenRect;
 import net.minecraft.client.gui.render.state.SimpleGuiElementRenderState;
 import net.minecraft.client.texture.TextureSetup;
+import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3x2f;
 import org.apex.mixins.accessors.DrawContextAccessor;
+import org.joml.Vector2f;
 
 public abstract class SimpleShapeRenderState implements SimpleGuiElementRenderState {
     protected final RenderPipeline pipeline;
@@ -32,11 +34,11 @@ public abstract class SimpleShapeRenderState implements SimpleGuiElementRenderSt
         this.borderColor = borderColor;
         this.borderThickness = borderThickness;
         this.scissorArea = ((DrawContextAccessor) context).getScissorStack().peekLast();
-        this.bounds = createBounds(x, y, w, h, pose, scissorArea);
+        this.bounds = createBounds(pose, scissorArea);
     }
 
-    private static @Nullable ScreenRect createBounds(int x, int y, int width, int height, Matrix3x2f pose, @Nullable ScreenRect scissorArea) {
-        ScreenRect screenRect = new ScreenRect(x, y, width, height).transformEachVertex(pose);
+    private ScreenRect createBounds(Matrix3x2f pose, @Nullable ScreenRect scissorArea) {
+        ScreenRect screenRect = createScreenRect(pose);
         return scissorArea != null ? scissorArea.intersection(screenRect) : screenRect;
     }
 
@@ -58,5 +60,17 @@ public abstract class SimpleShapeRenderState implements SimpleGuiElementRenderSt
     @Override
     public ScreenRect bounds() {
         return bounds;
+    }
+
+    private ScreenRect createScreenRect(Matrix3x2f pose) {
+        Vector2f vector2f = pose.transformPosition(x, y, new Vector2f());
+        Vector2f vector2f2 = pose.transformPosition(x + w, y, new Vector2f());
+        Vector2f vector2f3 = pose.transformPosition(x, y + h, new Vector2f());
+        Vector2f vector2f4 = pose.transformPosition(x + w, y + h, new Vector2f());
+        float f = Math.min(Math.min(vector2f.x(), vector2f3.x()), Math.min(vector2f2.x(), vector2f4.x()));
+        float g = Math.max(Math.max(vector2f.x(), vector2f3.x()), Math.max(vector2f2.x(), vector2f4.x()));
+        float h = Math.min(Math.min(vector2f.y(), vector2f3.y()), Math.min(vector2f2.y(), vector2f4.y()));
+        float i = Math.max(Math.max(vector2f.y(), vector2f3.y()), Math.max(vector2f2.y(), vector2f4.y()));
+        return new ScreenRect(MathHelper.floor(f), MathHelper.floor(h), MathHelper.ceil(g - f), MathHelper.ceil(i - h));
     }
 }

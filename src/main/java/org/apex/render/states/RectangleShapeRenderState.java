@@ -18,9 +18,9 @@ public class RectangleShapeRenderState extends SimpleShapeRenderState {
     @Override
     public void setupVertices(VertexConsumer vertices) {
         DirectVertexConsumer dvc = new DirectVertexConsumer((BufferBuilder) vertices);
-        dvc.vertex(pose, x, y + h).texture(0, 0).texture(w, h).putVector4f(roundness).color(color).putColor(borderColor).putFloat(borderThickness);
-        dvc.vertex(pose, x + w, y + h).texture(1, 0).texture(w, h).putVector4f(roundness).color(color).putColor(borderColor).putFloat(borderThickness);
-        dvc.vertex(pose, x + w, y).texture(1, 1).texture(w, h).putVector4f(roundness).color(color).putColor(borderColor).putFloat(borderThickness);
-        dvc.vertex(pose, x, y).texture(0, 1).texture(w, h).putVector4f(roundness).color(color).putColor(borderColor).putFloat(borderThickness);
+        dvc.vertex(pose, x, y + h).texture(0, 0).texture(w, h).putVec4f(roundness).color(color).putColor(borderColor).putFloat(borderThickness);
+        dvc.vertex(pose, x + w, y + h).texture(1, 0).texture(w, h).putVec4f(roundness).color(color).putColor(borderColor).putFloat(borderThickness);
+        dvc.vertex(pose, x + w, y).texture(1, 1).texture(w, h).putVec4f(roundness).color(color).putColor(borderColor).putFloat(borderThickness);
+        dvc.vertex(pose, x, y).texture(0, 1).texture(w, h).putVec4f(roundness).color(color).putColor(borderColor).putFloat(borderThickness);
     }
 }

@@ -22,7 +22,6 @@ public class Apex implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-//        ConfigManager.load();
         Logger.init();
         ClientTickEvents.END_CLIENT_TICK.register(Scheduler.getInstance()::tick);
         ApiAuth.init();

@@ -6,6 +6,7 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
 import org.joml.Matrix3x2f;
+import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.lwjgl.system.MemoryUtil;
 import org.apex.mixins.accessors.BufferBuilderAccessor;
@@ -13,19 +14,15 @@ import org.apex.mixins.accessors.BufferBuilderAccessor;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public class DirectVertexConsumer implements VertexConsumer {
+public class DirectVertexConsumer extends CustomVertexConsumer {
     private final BufferBuilderAccessor accessor;
     private final VertexFormat format;
     private ByteBuffer into;
 
     public DirectVertexConsumer(BufferBuilder original) {
         this.accessor = (BufferBuilderAccessor) original;
-        format = accessor.getVertexFormat();
+        this.format = accessor.getVertexFormat();
         newVert();
-    }
-
-    private static byte floatToByte(float f) {
-        return (byte) ((int) (MathHelper.clamp(f, -1.0F, 1.0F) * 127.0F) & 0xFF);
     }
 
     private void checkEnd() {
@@ -38,7 +35,8 @@ public class DirectVertexConsumer implements VertexConsumer {
     }
 
     public DirectVertexConsumer vertex(Matrix3x2f matrix, float x, float y) {
-        return (DirectVertexConsumer) VertexConsumer.super.vertex(matrix, x, y);
+        Vector2f vector2f = matrix.transformPosition(x, y, new Vector2f());
+        return this.vertex(vector2f.x(), vector2f.y(), 0.0F);
     }
 
     @Override
@@ -64,14 +62,10 @@ public class DirectVertexConsumer implements VertexConsumer {
 
     public DirectVertexConsumer putColor(int argb) {
         checkEnd();
-        float a = ((argb >> 24) & 0xFF) / 255.0F;
-        float r = ((argb >> 16) & 0xFF) / 255.0F;
-        float g = ((argb >> 8) & 0xFF) / 255.0F;
-        float b = (argb & 0xFF) / 255.0F;
-        into.putFloat(r);
-        into.putFloat(g);
-        into.putFloat(b);
-        into.putFloat(a);
+        into.putFloat(((argb >> 16) & 0xFF) / 255.0F);
+        into.putFloat(((argb >> 8) & 0xFF) / 255.0F);
+        into.putFloat((argb & 0xFF) / 255.0F);
+        into.putFloat(((argb >> 24) & 0xFF) / 255.0F);
         return this;
     }
 
@@ -81,7 +75,7 @@ public class DirectVertexConsumer implements VertexConsumer {
         return this;
     }
 
-    public DirectVertexConsumer putVector4f(Vector4f vector4f) {
+    public DirectVertexConsumer putVec4f(Vector4f vector4f) {
         checkEnd();
         into.putFloat(vector4f.x);
         into.putFloat(vector4f.y);
@@ -101,26 +95,17 @@ public class DirectVertexConsumer implements VertexConsumer {
     @Override
     public DirectVertexConsumer overlay(int u, int v) {
         checkEnd();
-        into.putShort((short) u);
-        into.putShort((short) v);
-        return this;
-    }
-
-    @Override
-    public DirectVertexConsumer overlay(int uv) {
-        checkEnd();
-        into.putInt(uv);
+        into.putInt(u);
+        into.putInt(v);
         return this;
     }
 
     @Override
     public DirectVertexConsumer light(int u, int v) {
-        return overlay(u, v);
-    }
-
-    @Override
-    public DirectVertexConsumer light(int uv) {
-        return overlay(uv);
+        checkEnd();
+        into.putInt(u);
+        into.putInt(v);
+        return this;
     }
 
     @Override
@@ -135,5 +120,9 @@ public class DirectVertexConsumer implements VertexConsumer {
     @Override
     public VertexConsumer lineWidth(float width) {
         return putFloat(width);
+    }
+
+    private static byte floatToByte(float f) {
+        return (byte) ((int) (MathHelper.clamp(f, -1.0F, 1.0F) * 127.0F) & 0xFF);
     }
 }

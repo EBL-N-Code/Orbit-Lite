@@ -36,7 +36,7 @@ public class Logger {
 
     public static void error(String error, Object exception, boolean disableMod) {
         if (disableMod) ModState.disableMod();
-        LOGGER.error(error, exception);
+        error(error, exception);
     }
 
     public static void sendToPlayer(Text message) {
