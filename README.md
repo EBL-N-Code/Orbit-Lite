@@ -1,3 +1,5 @@
+![Chat UI](https://cdn.modrinth.com/data/cached_images/da52605777f20c87a72385aeb443c1e52952d8d1_0.webp)
+
 Apex is a client-side Minecraft mod that integrates an AI chat interface directly into your game. No setup is required, simply install the mod, launch Minecraft, and start chatting with the AI instantly.
 
 To open the Chat UI, click on **Right Shift** or run the command `./chat`.  
@@ -26,5 +28,3 @@ The context window determines how much of your previous conversation the AI reme
 3. Launch Minecraft and open the chat UI via `./chat` or **Right Shift**.
 
 If you encounter any issues or bugs please report them in the issues section or email us at **contact@apexmod.tech**
-
-![Chat UI](https://cdn.modrinth.com/data/cached_images/da52605777f20c87a72385aeb443c1e52952d8d1_0.webp)
