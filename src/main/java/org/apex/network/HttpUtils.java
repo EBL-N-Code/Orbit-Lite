@@ -113,14 +113,22 @@ public class HttpUtils {
                             String line = reader.readLine();
                             if (line == null) break;
                             if (line.startsWith("data: ")) {
-                                String json = line.substring(6).trim();
-
-                                if (json.startsWith("{\"usage\":")) {
-                                    CLIENT.execute(() -> onEvent.accept(new StreamEvent.Done(json)));
-                                    break;
+                                String data = line.substring(6);
+                                if (data.startsWith("content: ")) {
+                                    String content = data.substring(9);
+                                    CLIENT.execute(() -> onEvent.accept(new StreamEvent.Data(content)));
+                                    continue;
                                 }
 
-                                CLIENT.execute(() -> onEvent.accept(new StreamEvent.Data(json)));
+                                if (data.startsWith("{\"chat_info\":")) {
+                                    CLIENT.execute(() -> onEvent.accept(new StreamEvent.Info(data)));
+                                    continue;
+                                }
+
+                                if (data.startsWith("{\"usage\":")) {
+                                    CLIENT.execute(() -> onEvent.accept(new StreamEvent.Done(data)));
+                                    break;
+                                }
                             }
                         }
                     } catch (Exception e) {
@@ -149,9 +157,10 @@ public class HttpUtils {
         }
     }
 
-    public sealed interface StreamEvent permits StreamEvent.Data, StreamEvent.Error, StreamEvent.Done {
-        record Data(String json) implements StreamEvent {}
-        record Done(String json) implements StreamEvent {}
-        record Error(Throwable throwable, String error) implements StreamEvent { }
+    public sealed interface StreamEvent permits StreamEvent.Data, StreamEvent.Info, StreamEvent.Done, StreamEvent.Error {
+        record Data(String content) implements StreamEvent {}
+        record Info(String content) implements StreamEvent {}
+        record Done(String content) implements StreamEvent {}
+        record Error(Throwable throwable, String error) implements StreamEvent {}
     }
 }

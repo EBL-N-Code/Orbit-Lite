@@ -150,7 +150,7 @@ public class ProfileViewer extends Selector {
                 .addOption("Report a Bug", () -> contact.get("issues").ifPresent(url -> ConfirmLinkScreen.open(screen, url)))
                 .addOption("Website", () -> contact.get("homepage").ifPresent(url -> ConfirmLinkScreen.open(screen, url)))
                 .addOption("Releases", () -> contact.get("modrinth").ifPresent(url -> ConfirmLinkScreen.open(screen, url)))
-                .addOption("Discord Server", () -> contact.get("issues").ifPresent(url -> ConfirmLinkScreen.open(screen, url)))
+                .addOption("Github", () -> contact.get("issues").ifPresent(url -> ConfirmLinkScreen.open(screen, url)))
                 .build();
     }
 

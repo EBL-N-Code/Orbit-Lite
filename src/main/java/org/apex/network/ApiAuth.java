@@ -143,7 +143,7 @@ public class ApiAuth {
             signature.update(buf.array());
             return new TokenRequest.SignedData(buf.array(), signature.sign());
         } catch (Exception e) {
-            Logger.error("Failed to sign random data!", e);
+            Logger.error("Failed to sign random content!", e);
             return null;
         }
     }

@@ -6,11 +6,11 @@
   "description": "A client-side Minecraft mod that integrates an AI chat interface directly into your game.",
   "authors": ["7azem_"],
   "contact": {
-    "issues": "https://discord.gg/6h8p7Bk7VW",
+    "issues": "https://github.com/7azeemm/Apex",
     "homepage": "https://apexmod.tech",
     "modrinth": "https://modrinth.com/mod/apexmod"
   },
-  "icon": "assets/apex/icon.png",
+  "icon": "assets/apex/icon.jpg",
   "license": "All-Rights-Reserved",
   "environment": "client",
   "entrypoints": {

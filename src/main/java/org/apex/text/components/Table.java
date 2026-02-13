@@ -55,7 +55,7 @@ public class Table implements VisualLine {
     }
 
     /**
-     * The core layout engine. This is called whenever the table's data changes.
+     * The core layout engine. This is called whenever the table's content changes.
      */
     private void recalculateLayout() {
         int numColumns = headers.size();

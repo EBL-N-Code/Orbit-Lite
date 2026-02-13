@@ -78,15 +78,10 @@ public class BackendService {
 
             HttpUtils.sendStreamingRequest(Constants.SERVER_IP + "/api/chat/completions", GSON.toJson(request), ApiAuth.getToken(), event -> {
                 switch (event) {
-                    case HttpUtils.StreamEvent.Data data -> {
-                        JsonObject json = JsonParser.parseString(data.json()).getAsJsonObject();
-                        if (json.has("completions")) {
-                            JsonObject completions = json.getAsJsonObject("completions");
-                            if (completions.has("content")) {
-                                String content = completions.get("content").getAsString();
-                                message.append(content);
-                            }
-                        } else if (isNew && json.has("chat_info")) {
+                    case HttpUtils.StreamEvent.Data data -> message.append(data.content());
+                    case HttpUtils.StreamEvent.Info info -> {
+                        JsonObject json = JsonParser.parseString(info.content()).getAsJsonObject();
+                        if (isNew && json.has("chat_info")) {
                             JsonObject chatInfo = json.getAsJsonObject("chat_info");
                             String uuid = chatInfo.get("uuid").getAsString();
                             String name = chatInfo.get("name").getAsString();
@@ -99,8 +94,8 @@ public class BackendService {
                         Logger.error(err.error(), err.throwable());
                     }
                     case HttpUtils.StreamEvent.Done data -> {
-                        if (data.json() != null) {
-                            JsonObject json = JsonParser.parseString(data.json()).getAsJsonObject();
+                        if (data.content() != null) {
+                            JsonObject json = JsonParser.parseString(data.content()).getAsJsonObject();
                             if (json.has("usage")) {
                                 JsonObject usage = json.getAsJsonObject("usage");
                                 int inputTokens = usage.get("input_tokens").getAsInt();

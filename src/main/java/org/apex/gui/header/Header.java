@@ -18,7 +18,6 @@ public class Header extends Widget {
     @Override
     public void init() {
         selectors = new ArrayList<>();
-//        selectors.add(new ModelSelector(x + 5, y + (height / 2) - 6));
         selectors.add(new ProfileViewer(x + width - ProfileViewer.SIZE - 8, y + (height / 2) - (ProfileViewer.SIZE / 2) + 2));
     }
 
