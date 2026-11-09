@@ -1,4 +1,4 @@
-package org.apex;
+package org.orbit;
 
 import com.google.gson.Gson;
 import net.fabricmc.api.ClientModInitializer;
@@ -12,9 +12,9 @@ import org.apex.utils.KeyBinds;
 import org.apex.utils.Logger;
 import org.apex.utils.Scheduler;
 
-public class Apex implements ClientModInitializer {
-    public static final String NAMESPACE = "apex";
-    public static final String MOD_NAME = "Apex";
+public class Orbit implements ClientModInitializer {
+    public static final String NAMESPACE = "orbit";
+    public static final String MOD_NAME = "Orbit";
     public static final ModContainer MOD = FabricLoader.getInstance().getModContainer(NAMESPACE).orElseThrow();
     public static final String VERSION = MOD.getMetadata().getVersion().getFriendlyString();
     public static final String MINECRAFT_VERSION = SharedConstants.getGameVersion().name();

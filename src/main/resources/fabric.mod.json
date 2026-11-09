@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "apex",
+  "id": "orbit",
   "version": "${version}",
-  "name": "Apex",
+  "name": "Orbit",
   "description": "A client-side Minecraft mod that integrates an AI chat interface directly into your game.",
   "authors": ["7azem_"],
   "contact": {
@@ -10,16 +10,16 @@
     "homepage": "https://apexmod.tech",
     "modrinth": "https://modrinth.com/mod/apexmod"
   },
-  "icon": "assets/apex/icon.jpg",
+  "icon": "assets/orbit/icon.jpg",
   "license": "All-Rights-Reserved",
   "environment": "client",
   "entrypoints": {
     "client": [
-      "org.apex.Apex"
+      "org.orbit.Orbit"
     ]
   },
   "mixins": [
-    "apex.mixins.json"
+    "orbit.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.17.0",
