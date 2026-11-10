@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "org.orbit.mixins",
+  "compatibilityLevel": "JAVA_21",
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "client": [
+    "MinecraftClientMixin",
+    "accessors.BufferBuilderAccessor",
+    "accessors.DrawContextAccessor",
+    "accessors.MinecraftClientAccessor"
+  ]
+}
